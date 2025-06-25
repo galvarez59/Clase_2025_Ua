@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Jun  9 10:26:09 2022
+
+@author: gabrielalvarez
+"""
+def separa(adat):
+    global articulo, precio
+    
+    auxiliar = ""
+    Valor = ""
+    num_car = len(adat)
+    print(num_car)
+    print(num_car)
+    print(adat)
+    
+    i = 0
+                     
+# Inicio articulo
+    while(ord(adat[i]) != 32):
+        auxiliar =  auxiliar + adat[i]
+        i = i + 1
+    pass 
+    try:
+        articulo = str(auxiliar) 
+    except:
+        print("order value is invalid")
+        articulo = str(auxiliar)                  
+    auxiliar = ""
+    i = i + 1                                         
+# fin latitud
+
+# lectura espacios en blanco 
+    while(ord(adat[i]) == 32):
+        i = i + 1
+    pass
+
+
+# inicio precio
+    
+    precio = int(adat[i:(num_car-i)+i])
+                           
+                   
+    return articulo,  precio   
+
+# Inicio Programa
+global articulo, precio
+ruta_directorio="/Users/gabrielalvarez/clase_2025_ua/clase_2024_ua/"
+
+archivo_entrada=open(ruta_directorio + "articulos_exportar_a_prn_dolar.prn","r")
+
+archivo_salida_A=open(ruta_directorio+"articulos_exportar_a_prn_pesos.prn","w")
+adat = str(archivo_entrada.readline())
+a = True
+while a:
+     
+     adat = str(archivo_entrada.readline()) # Lee el primer dato del archivo abierto de Input
+     
+     if adat != '\n':
+       
+            separa(adat) # llama a la subrutina
+       
+            precio = precio * 800
+            precio = str(precio)
+
+            lines = "    "+ articulo + "  " + precio + "\n"
+
+            archivo_salida_A.writelines(lines)
+     else:
+      a= False
+        
+
+
+    
+     
+archivo_entrada.close()
+archivo_salida_A.close()
