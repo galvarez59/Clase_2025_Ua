@@ -31,7 +31,7 @@ def ventana_grupo_2():
 
     # --- CREA UNA NUEVA VENTANA PARA TU GRUPO ---
     win = tk.Toplevel(root)
-    win.title("Poligono 2")
+    win.title("Poligono 2 2025")
     win.geometry("400x300")
 
 
