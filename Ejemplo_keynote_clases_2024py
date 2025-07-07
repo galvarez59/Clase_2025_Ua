@@ -3,7 +3,7 @@
 """
 Created on Thu Jun  9 10:26:09 2022
 
-@author: gabrielalvarez
+@author: cristobalPAIVA 2025
 """
 def separa(adat):
     global articulo, precio
