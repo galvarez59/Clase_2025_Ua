@@ -92,6 +92,121 @@ def ventana_grupo_2():
             self.canvas = FigureCanvasTkAgg(self.figure, master=self.root)
             self.canvas.get_tk_widget().pack(pady=10)
 
+        def detectar_duplicados(self):
+            if self.df is None:
+                return
+            duplicados = self.df.duplicated()
+            cantidad = duplicados.sum()
+            if cantidad > 0:
+                respuesta = messagebox.askyesno("Puntos duplicados", f"Se detectaron {cantidad} puntos duplicados.\n¿Deseas eliminarlos?")
+                if respuesta:
+                    self.df = self.df.drop_duplicates().reset_index(drop=True)
+                    messagebox.showinfo("Limpieza completada", f"Se eliminaron {cantidad} duplicados.")
+                else:
+                    messagebox.showinfo("Aviso", "Los duplicados se han conservado")
+
+        def import_txt(self):
+            file_path = filedialog.askopenfilename(filetypes=[("Archivos de texto o CSV", "*.txt *.csv")])
+            if not file_path:
+                return
+
+            formato = tk.StringVar()
+            def seleccionar_formato():
+                ventana.destroy()
+
+            ventana = tk.Toplevel(self.root)
+            ventana.title("Seleccionar formato de archivo")
+            ventana.geometry("400x300")
+            ventana.grab_set()
+            tk.Label(ventana, text="¿Qué formato tiene el archivo?", font=("Segoe UI", 12)).pack(pady=20)
+            formatos = [
+                ("PNEZD (Punto, Norte, Este, Cota, Descripción)", "PNEZD"),
+                ("PENZD (Punto, Este, Norte, Cota, Descripción)", "PENZD"),
+                ("ENZD (Este, Norte, Cota, Descripción)", "ENZD"),
+                ("NEZD (Norte, Este, Cota, Descripción)", "NEZD"),
+            ]
+            for texto, valor in formatos:
+                tk.Radiobutton(ventana, text=texto, variable=formato, value=valor, font=("Segoe UI", 11)).pack(anchor="w", padx=20)
+            tk.Button(ventana, text="Aceptar", command=seleccionar_formato, bg="#00b894", fg="white").pack(pady=10)
+            ventana.wait_window()
+
+            if not formato.get():
+                return
+
+            try:
+                # Detectar delimitador automáticamente (soporta coma, punto y coma, espacio)
+                with open(file_path, "r", encoding="utf-8") as f:
+                    first_line = f.readline()
+                if "," in first_line:
+                    sep = ","
+                elif ";" in first_line:
+                    sep = ";"
+                elif " " in first_line:
+                    sep = " "
+                else:
+                    sep = ","  # fallback
+
+                # Definir nombres de columnas según formato (sin encabezado en archivo)
+                if formato.get() in ["PNEZD", "PENZD"]:
+                    columnas = ["Punto", "A", "B", "Z", "Descripción"]
+                else:
+                    columnas = ["A", "B", "Z", "Descripción"]
+
+                df = pd.read_csv(file_path, sep=sep, header=None, names=columnas, dtype=str)
+                # Asignar X/Y según formato
+                if formato.get() == "PNEZD":
+                    df.rename(columns={"A": "Y", "B": "X"}, inplace=True)
+                elif formato.get() == "PENZD":
+                    df.rename(columns={"A": "X", "B": "Y"}, inplace=True)
+                elif formato.get() == "ENZD":
+                    df.rename(columns={"A": "X", "B": "Y"}, inplace=True)
+                elif formato.get() == "NEZD":
+                    df.rename(columns={"A": "Y", "B": "X"}, inplace=True)
+
+                # Convertir X, Y, Z a float, Descripción como texto (puede haber vacíos)
+                for col in ["X", "Y", "Z"]:
+                    df[col] = pd.to_numeric(df[col], errors="coerce")
+                if "Descripción" in df.columns:
+                    df["Descripción"] = df["Descripción"].fillna("").astype(str)
+
+                columnas_validas = ["X", "Y", "Z"]
+                if "Descripción" in df.columns and not df["Descripción"].isnull().all() and not (df["Descripción"] == "").all():
+                    columnas_validas.append("Descripción")
+                self.df = df[columnas_validas].dropna(subset=["X", "Y", "Z"])
+                self.filtered_df = None
+
+                self.detectar_duplicados()
+                self.plot_points(self.df)
+                self.axis_limits = self.get_axis_limits(self.df)
+                self.label_total.config(text=f"Total points: {len(self.df)}")
+                self.label_filtered.config(text="Filtered points: 0")
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo leer el archivo:\n{e}")
+
+        def filtrar_puntos(self):
+            if self.df is None:
+                messagebox.showwarning("Advertencia", "Primero debes importar un archivo.")
+                return
+
+            poly = []
+            for i, (entry_n, entry_e) in enumerate(self.vertex_entries):
+                try:
+                    n = float(entry_n.get())
+                    e = float(entry_e.get())
+                    poly.append((e, n))
+                except ValueError:
+                    messagebox.showerror("Error", f"Vértice {i+1} inválido. Ingresa valores numéricos.")
+                    return
+
+            if len(poly) < 3:
+                messagebox.showerror("Error", "Debes ingresar al menos 3 vértices para definir el polígono.")
+                return
+
+            mask = [point_in_polygon(x, y, poly) for x, y in zip(self.df["X"], self.df["Y"])]
+            self.filtered_df = self.df[mask]
+            self.plot_points(self.filtered_df, poly, title="Puntos dentro del polígono definido", keep_limits=True)
+            self.label_filtered.config(text=f"Filtered points: {len(self.filtered_df)}")
+ 
 
     win2 = tk.Toplevel()
     app = PointFilterApp(win2)
