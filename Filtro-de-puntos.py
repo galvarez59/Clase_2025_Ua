@@ -23,8 +23,35 @@ def ventana_grupo_2():
     import pandas as pd
     import matplotlib.pyplot as plt 
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-    from tkinter import filedialog, messagebox
+    from tkinter import filedialog, messagebox, ttk
     import tkinter as tk
+    import numpy as np
+
+    class ToolTip:
+        def __init__(self, widget, text):
+            self.widget = widget
+            self.text = text
+            self.tipwindow = None
+            widget.bind('<Enter>', self.show_tip)
+            widget.bind('<Leave>', self.hide_tip)
+        def show_tip(self, event=None):
+            if self.tipwindow or not self.text:
+                return
+            x, y, _, _ = self.widget.bbox("insert") if self.widget.winfo_class() == 'Entry' else (0, 0, 0, 0)
+            x = x + self.widget.winfo_rootx() + 25
+            y = y + self.widget.winfo_rooty() + 20
+            self.tipwindow = tw = tk.Toplevel(self.widget)
+            tw.wm_overrideredirect(True)
+            tw.wm_geometry(f"+{x}+{y}")
+            label = tk.Label(tw, text=self.text, background="#333", foreground="white",
+                             relief="solid", borderwidth=1, font=("Segoe UI", 10, "bold"),
+                             padx=8, pady=4)
+            label.pack()
+        def hide_tip(self, event=None):
+            tw = self.tipwindow
+            if tw:
+                tw.destroy()
+            self.tipwindow = None
 
     def point_in_polygon(x, y, polygon):
         n = len(polygon)
@@ -42,55 +69,79 @@ def ventana_grupo_2():
         def __init__(self, root):
             self.root = root
             self.root.title("Filtrado de Nube de Puntos (X, Y, Z)")
-            self.root.geometry("1150x750")
-            self.root.configure(bg="#ecf0f1")
-
+            self.root.geometry("1200x780")
+            self.root.configure(bg="#f7fafc")
             self.df = None
             self.filtered_df = None
+            self.df_before_dupes = None
             self.vertex_entries = []
             self.axis_limits = None
-
+            self.vertices_mouse = []
+            self.cid = None
             self.create_widgets()
 
         def create_widgets(self):
-            title = tk.Label(self.root, text="Filtrado Inteligente de Nube de Puntos",
-                             font=("Segoe UI", 22, "bold"), bg="#ecf0f1", fg="#2c3e50")
-            title.pack(pady=10)
-
-            frame_controls = tk.Frame(self.root, bg="#dfe6e9")
-            frame_controls.pack(pady=10)
-
-            self.label_total = tk.Label(self.root, text="Total points: 0", font=("Segoe UI", 12), bg="#ecf0f1", fg="#2c3e50")
-            self.label_total.pack()
-
-            self.label_filtered = tk.Label(self.root, text="Filtered points: 0", font=("Segoe UI", 12), bg="#ecf0f1", fg="#2c3e50")
-            self.label_filtered.pack()
-
-            btn_import = tk.Button(frame_controls, text="Importar TXT", font=("Segoe UI", 12),
-                                   command=self.import_txt, bg="#0984e3", fg="white")
-            btn_import.grid(row=0, column=0, padx=10, pady=5)
-
-            tk.Label(frame_controls, text="Vértices del polígono (Norte, Este):", font=("Segoe UI", 12, "bold"), bg="#dfe6e9").grid(row=1, column=0, pady=10)
+            header = tk.Frame(self.root, bg="#0a3d62", height=70)
+            header.pack(fill="x")
+            title = tk.Label(header, text="Filtrado Inteligente de Nube de Puntos",
+                             font=("Segoe UI", 26, "bold"), bg="#0a3d62", fg="#ffffff")
+            title.pack(pady=14)
+            main_frame = tk.Frame(self.root, bg="#f7fafc")
+            main_frame.pack(fill="both", expand=True, padx=20, pady=10)
+            panel = tk.LabelFrame(main_frame, text="Opciones de Filtrado", font=("Segoe UI", 14, "bold"),
+                                  bg="#f7fafc", fg="#0a3d62", padx=16, pady=12, bd=2)
+            panel.pack(side="left", fill="y", padx=10, pady=10)
+            btn_import = ttk.Button(panel, text="Importar TXT", command=self.import_txt)
+            btn_import.pack(fill="x", pady=8)
+            ToolTip(btn_import, "Importa un archivo de puntos")
+            vert_label = tk.Label(panel, text="Vértices del polígono (Norte, Este):", font=("Segoe UI", 12, "bold"),
+                                  bg="#f7fafc", fg="#0a3d62")
+            vert_label.pack(pady=8)
+            verts_frame = tk.Frame(panel, bg="#f7fafc")
+            verts_frame.pack()
             for i in range(4):
-                tk.Label(frame_controls, text=f"V{i+1} Norte:", font=("Segoe UI", 11), bg="#dfe6e9").grid(row=1, column=1 + i*2)
-                entry_n = tk.Entry(frame_controls, width=8)
-                entry_n.grid(row=1, column=2 + i*2)
-                tk.Label(frame_controls, text=f"Este:", font=("Segoe UI", 11), bg="#dfe6e9").grid(row=2, column=1 + i*2)
-                entry_e = tk.Entry(frame_controls, width=8)
-                entry_e.grid(row=2, column=2 + i*2)
+                box = tk.Frame(verts_frame, bg="#f7fafc")
+                box.pack(side="left", padx=5)
+                tk.Label(box, text=f"V{i+1} N:", font=("Segoe UI", 11), bg="#f7fafc").pack()
+                entry_n = ttk.Entry(box, width=7)
+                entry_n.pack()
+                tk.Label(box, text="E:", font=("Segoe UI", 11), bg="#f7fafc").pack()
+                entry_e = ttk.Entry(box, width=7)
+                entry_e.pack()
                 self.vertex_entries.append((entry_n, entry_e))
-
-            btn_filter = tk.Button(frame_controls, text="Filtrar por Polígono", font=("Segoe UI", 12),
-                                   command=self.filtrar_puntos, bg="#00b894", fg="white")
-            btn_filter.grid(row=1, column=9, padx=10, pady=5, rowspan=2)
-
-            btn_export = tk.Button(frame_controls, text="Exportar TXT", font=("Segoe UI", 12),
-                                   command=self.export_txt, bg="#6c5ce7", fg="white")
-            btn_export.grid(row=1, column=10, padx=10, pady=5, rowspan=2)
-
-            self.figure, self.ax = plt.subplots(figsize=(8, 6))
-            self.canvas = FigureCanvasTkAgg(self.figure, master=self.root)
-            self.canvas.get_tk_widget().pack(pady=10)
+            btn_vertices_mouse = ttk.Button(panel, text="Elegir vértices con mouse", command=self.elegir_vertices_mouse)
+            btn_vertices_mouse.pack(fill="x", pady=5)
+            ToolTip(btn_vertices_mouse, "Haz clic izquierdo para agregar vértices, derecho para borrar el último")
+            btn_reset_poly = ttk.Button(panel, text="Reset Polígono", command=self.reset_poligono)
+            btn_reset_poly.pack(fill="x", pady=5)
+            ToolTip(btn_reset_poly, "Borra todos los vértices puestos con el mouse y limpia el polígono")
+            btn_filter = ttk.Button(panel, text="Filtrar por Polígono", command=self.filtrar_puntos)
+            btn_filter.pack(fill="x", pady=12)
+            ToolTip(btn_filter, "Filtra los puntos dentro del polígono")
+            btn_export = ttk.Button(panel, text="Exportar TXT", command=self.export_txt)
+            btn_export.pack(fill="x", pady=5)
+            ToolTip(btn_export, "Exporta los puntos filtrados")
+            btn_reset = ttk.Button(panel, text="Reset", command=self.reset_all)
+            btn_reset.pack(fill="x", pady=5)
+            ToolTip(btn_reset, "Limpiar todos los datos y vértices")
+            self.btn_undo = ttk.Button(panel, text="Deshacer duplicados", command=self.undo_duplicates)
+            self.btn_undo.pack(fill="x", pady=2)
+            self.btn_undo.pack_forget()
+            ToolTip(self.btn_undo, "Restaurar datos antes de eliminar duplicados")
+            info_frame = tk.Frame(panel, bg="#f7fafc")
+            info_frame.pack(fill="x", pady=8)
+            self.label_total = tk.Label(info_frame, text="Total points: 0", font=("Segoe UI", 12), bg="#f7fafc", fg="#2c3e50")
+            self.label_total.pack()
+            self.label_filtered = tk.Label(info_frame, text="Filtered points: 0", font=("Segoe UI", 12), bg="#f7fafc", fg="#2c3e50")
+            self.label_filtered.pack()
+            graph_frame = tk.LabelFrame(main_frame, text="Vista gráfica", font=("Segoe UI", 14, "bold"),
+                                       bg="#f7fafc", fg="#0a3d62", padx=12, pady=12, bd=2)
+            graph_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
+            self.figure, self.ax = plt.subplots(figsize=(9, 7))
+            self.figure.patch.set_facecolor("#f7fafc")
+            self.ax.set_facecolor("#f7fafc")
+            self.canvas = FigureCanvasTkAgg(self.figure, master=graph_frame)
+            self.canvas.get_tk_widget().pack(fill="both", expand=True)
 
         def detectar_duplicados(self):
             if self.df is None:
@@ -184,24 +235,27 @@ def ventana_grupo_2():
                 messagebox.showerror("Error", f"No se pudo leer el archivo:\n{e}")
 
         def filtrar_puntos(self):
-            if self.df is None:
-                messagebox.showwarning("Advertencia", "Primero debes importar un archivo.")
-                return
-
-            poly = []
-            for i, (entry_n, entry_e) in enumerate(self.vertex_entries):
-                try:
-                    n = float(entry_n.get())
-                    e = float(entry_e.get())
-                    poly.append((e, n))
-                except ValueError:
-                    messagebox.showerror("Error", f"Vértice {i+1} inválido. Ingresa valores numéricos.")
+            # Si se usaron vértices por mouse válidos, usa esos
+            if self.vertices_mouse and len(self.vertices_mouse) >= 3:
+                poly = self.vertices_mouse
+                # Desconecta el evento para evitar seguir agregando vértices al hacer click
+                if self.cid:
+                    self.canvas.mpl_disconnect(self.cid)
+                    self.cid = None
+                self.vertices_mouse = []
+            else:
+                # Usa los entrys manuales
+                poly = []
+                for i, (entry_n, entry_e) in enumerate(self.vertex_entries):
+                    try:
+                        n = float(entry_n.get())
+                        e = float(entry_e.get())
+                        poly.append((e, n))
+                    except ValueError:
+                        continue
+                if len(poly) < 3:
+                    messagebox.showerror("Error", "Debes ingresar al menos 3 vértices para definir el polígono.")
                     return
-
-            if len(poly) < 3:
-                messagebox.showerror("Error", "Debes ingresar al menos 3 vértices para definir el polígono.")
-                return
-
             mask = [point_in_polygon(x, y, poly) for x, y in zip(self.df["X"], self.df["Y"])]
             self.filtered_df = self.df[mask]
             self.plot_points(self.filtered_df, poly, title="Puntos dentro del polígono definido", keep_limits=True)
