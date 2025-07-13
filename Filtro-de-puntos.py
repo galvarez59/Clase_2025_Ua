@@ -5,6 +5,7 @@ from tkinter import ttk
 # ===   VENTANA GRUPO 1    ===
 # ============================
 def ventana_grupo_1():
+    import pandas as pd
     win = tk.Toplevel(root)
     win.title("Poligono 1")
     win.geometry("400x250")
