@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import filedialog
 
 # ============================
 # ===   VENTANA GRUPO 1    ===
@@ -33,6 +34,15 @@ def ventana_grupo_2():
     win = tk.Toplevel(root)
     win.title("Poligono 200 2025")
     win.geometry("400x300")
+    # Importación robusta: soporta archivos NEZD/ENZD con 3 o 4 columnas
+    def import_txt(self):
+            file_path = filedialog.askopenfilename(filetypes=[
+                ("Archivos TXT/CSV/Excel", "*.txt *.csv *.xlsx")
+            ])
+            if not file_path:
+                return
+
+
 
 
     # -------------- INSTRUCCIONES GRUPO 3 --------------
