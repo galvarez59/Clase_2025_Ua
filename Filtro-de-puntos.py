@@ -155,9 +155,9 @@ def ventana_grupo_2():
                     messagebox.showinfo("Limpieza completada", f"Se eliminaron {cantidad} duplicados.")
                 else:
                     messagebox.showinfo("Aviso", "Los duplicados se han conservado")
-
+#Importacion de datos: archivos NEZD/ENZD con 3 o 4 columnas
         def import_txt(self):
-            file_path = filedialog.askopenfilename(filetypes=[("Archivos de texto o CSV", "*.txt *.csv")])
+            file_path = filedialog.askopenfilename(filetypes=[("Archivos de TXT/CSV/Excel", "*.txt *.csv *.xlxs")])
             if not file_path:
                 return
 
