@@ -1,12 +1,10 @@
 import tkinter as tk
 from tkinter import ttk
-from tkinter import filedialog
 
 # ============================
 # ===   VENTANA GRUPO 1    ===
 # ============================
 def ventana_grupo_1():
-    import pandas as pd
     win = tk.Toplevel(root)
     win.title("Poligono 1")
     win.geometry("400x250")
@@ -55,38 +53,6 @@ def ventana_grupo_2():
                 tw.destroy()
             self.tipwindow = None
 
-<<<<<<< HEAD
-    # --- CREA UNA NUEVA VENTANA PARA TU GRUPO ---
-    win = tk.Toplevel(root)
-    win.title("Poligono 200 2025")
-    win.geometry("400x300")
-    # Importación robusta: soporta archivos NEZD/ENZD con 3 o 4 columnas
-    def import_txt(self):
-            file_path = filedialog.askopenfilename(filetypes=[
-                ("Archivos TXT/CSV/Excel", "*.txt *.csv *.xlsx")
-            ])
-            if not file_path:
-                return
-          # Paso 1: Selección de formato
-            formato = tk.StringVar()
-            win_formato = tk.Toplevel(self.root)
-            win_formato.title("Formato de archivo")
-            tk.Label(win_formato, text="¿Qué formato tiene el archivo?", font=("Segoe UI", 13, "bold")).pack(pady=14)
-            formatos = [
-                ("PNEZD (Punto, Norte, Este, Cota, Descripción)", "PNEZD"),
-                ("PENZD (Punto, Este, Norte, Cota, Descripción)", "PENZD"),
-                ("ENZD (Este, Norte, Cota, Descripción)", "ENZD"),
-                ("NEZD (Norte, Este, Cota, Descripción)", "NEZD"),
-            ]
-            for texto, valor in formatos:
-                ttk.Radiobutton(win_formato, text=texto, variable=formato, value=valor).pack(anchor="w", padx=20)
-            ttk.Button(win_formato, text="Aceptar", command=win_formato.destroy).pack(pady=8)
-            win_formato.wait_window()
-            if not formato.get():
-                return
-
-
-=======
     def point_in_polygon(x, y, polygon):
         n = len(polygon)
         inside = False
@@ -298,7 +264,6 @@ def ventana_grupo_2():
 
     win2 = tk.Toplevel()
     app = PointFilterApp(win2)
->>>>>>> a7b823f44a20f5c37207acf566b833f0ed1dd6e9
 
 
     # -------------- INSTRUCCIONES GRUPO 3 --------------
