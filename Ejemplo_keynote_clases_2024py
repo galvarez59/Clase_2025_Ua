@@ -46,11 +46,11 @@ def separa(adat):
 
 # Inicio Programa
 global articulo, precio
-ruta_directorio="/Users/gabrielalvarez/clase_2025_ua/clase_2024_ua/"
+ruta_directorio="C:\\Users\\usuario\\clase_2025_ua\\Clase_2025_Ua\\"
 
 archivo_entrada=open(ruta_directorio + "articulos_exportar_a_prn_dolar.prn","r")
 
-archivo_salida_A=open(ruta_directorio+"articulos_exportar_a_prn_pesos.prn","w")
+archivo_salida_A=open(ruta_directorio+ "articulos_exportar_a_prn_pesos.prn","w")
 adat = str(archivo_entrada.readline())
 a = True
 while a:
