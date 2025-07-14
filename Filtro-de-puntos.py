@@ -5,11 +5,25 @@ from tkinter import ttk
 # ===   VENTANA GRUPO 1    ===
 # ============================
 def ventana_grupo_1():
-    win = tk.Toplevel(root)
-    win.title("Poligono 1")
-    win.geometry("400x250")
-    label = ttk.Label(win, text="Poly_1\nAgrega aquí tu código de filtrado", font=("Segoe UI", 14))
-    label.pack(pady=50)
+    import tkinter as tk
+    from tkinter import filedialog, messagebox, ttk
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+    # Algoritmo: winding number
+    def punto_en_area(x, y, area):
+        wn = 0
+        for i in range(len(area)):
+            x0, y0 = area[i]
+            x1, y1 = area[(i + 1) % len(area)]
+            if y0 <= y:
+                if y1 > y and _is_left(x0, y0, x1, y1, x, y) > 0:
+                    wn += 1
+            else:
+                if y1 <= y and _is_left(x0, y0, x1, y1, x, y) < 0:
+                    wn -= 1
+        return wn != 0 
     # -------------- INSTRUCCIONES GRUPO 1 --------------
     # Aquí pueden importar librerías, crear clases, funciones y widgets
     # Ejemplo: crear una interfaz propia, botones, canvas, etc.
