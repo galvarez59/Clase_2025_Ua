@@ -24,6 +24,65 @@ def ventana_grupo_1():
                 if y1 <= y and _is_left(x0, y0, x1, y1, x, y) < 0:
                     wn -= 1
         return wn != 0 
+    
+    def _is_left(x0, y0, x1, y1, px, py):
+        return (x1 - x0)*(py - y0) - (px - x0)*(y1 - y0)
+
+    class AreaUI:
+        def __init__(self, master):
+            self.master = master
+            master.title("Filtrado por Región - Grupo 1")
+            master.geometry("1100x820")
+            master.configure(bg="#f7f9fa")
+
+            self.df = None
+            self.df_filtrada = None
+            self.limites = None
+
+            self._crear_panel_lateral()
+            self._crear_panel_grafico()
+
+        def _crear_panel_lateral(self):
+            self.panel = tk.Frame(self.master, bg="#d6eaf8", width=320)
+            self.panel.pack(side="left", fill="y")
+            self.panel.pack_propagate(False)
+
+            tk.Label(self.panel, text="Región de Puntos", font=("Segoe UI", 21, "bold"), bg="#d6eaf8", fg="#1b4f72").pack(pady=28)
+
+            self.btn_cargar = ttk.Button(self.panel, text="Importar archivo", command=self._importar)
+            self.btn_cargar.pack(pady=10, padx=35, fill="x")
+
+            self.btn_exportar = ttk.Button(self.panel, text="Exportar TXT", command=self._exportar)
+            self.btn_exportar.pack(pady=6, padx=35, fill="x")
+
+            ttk.Separator(self.panel).pack(fill="x", pady=18)
+
+            tk.Label(self.panel, text="Vértices área (Y, X):", font=("Segoe UI", 14), bg="#d6eaf8", fg="#1b4f72").pack(pady=11)
+            self.verts_frame = tk.Frame(self.panel, bg="#d6eaf8")
+            self.verts_frame.pack(pady=6)
+
+            self.entrada_vertices = []
+            for i in range(4):
+                fila = tk.Frame(self.verts_frame, bg="#d6eaf8")
+                fila.pack(pady=2)
+                tk.Label(fila, text=f"Y{i+1}:", font=("Segoe UI", 11), bg="#d6eaf8").pack(side="left")
+                e_y = ttk.Entry(fila, width=7)
+                e_y.pack(side="left", padx=2)
+                tk.Label(fila, text="X:", font=("Segoe UI", 11), bg="#d6eaf8").pack(side="left")
+                e_x = ttk.Entry(fila, width=7)
+                e_x.pack(side="left")
+                self.entrada_vertices.append((e_y, e_x))
+
+            self.btn_filtrar = ttk.Button(self.panel, text="Filtrar área", command=self._filtrar)
+            self.btn_filtrar.pack(pady=18, padx=35, fill="x")
+
+        def _crear_panel_grafico(self):
+            self.frame_grafico = tk.Frame(self.master, bg="#f7f9fa")
+            self.frame_grafico.pack(side="right", expand=True, fill="both")
+            self.figura, self.ax = plt.subplots(figsize=(8, 8))
+            self.ax.set_facecolor("#f7f9fa")
+            self.canvas = FigureCanvasTkAgg(self.figura, master=self.frame_grafico)
+            self.canvas.get_tk_widget().pack(expand=True, fill="both", pady=20)
     # -------------- INSTRUCCIONES GRUPO 1 --------------
     # Aquí pueden importar librerías, crear clases, funciones y widgets
     # Ejemplo: crear una interfaz propia, botones, canvas, etc.
