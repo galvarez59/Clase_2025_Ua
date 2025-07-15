@@ -83,6 +83,51 @@ def ventana_grupo_1():
             self.ax.set_facecolor("#f7f9fa")
             self.canvas = FigureCanvasTkAgg(self.figura, master=self.frame_grafico)
             self.canvas.get_tk_widget().pack(expand=True, fill="both", pady=20)
+            
+        def _importar(self):
+            archivo = filedialog.askopenfilename(filetypes=[("Archivos TXT/CSV", "*.txt *.csv")])
+            if not archivo:
+                return
+
+            formato = tk.StringVar()
+            def aceptar():
+                ventana.destroy()
+            ventana = tk.Toplevel(self.master)
+            ventana.title("Formato de archivo")
+            ventana.geometry("380x210")
+            ventana.grab_set()
+            tk.Label(ventana, text="¿Formato de archivo?", font=("Segoe UI", 12)).pack(pady=14)
+            formatos = [
+                ("PNEZD", "PNEZD"),
+                ("PENZD", "PENZD"),
+                ("ENZD", "ENZD"),
+                ("NEZD", "NEZD"),
+            ]
+            for txt, val in formatos:
+                ttk.Radiobutton(ventana, text=txt, variable=formato, value=val).pack(anchor="w", padx=20)
+            ttk.Button(ventana, text="Aceptar", command=aceptar).pack(pady=9)
+            ventana.wait_window()
+            if not formato.get():
+                return
+
+            try:
+                with open(archivo, "r", encoding="utf-8") as f:
+                    primera = f.readline()
+                if "," in primera:
+                    sep = ","
+                elif ";" in primera:
+                    sep = ";"
+                elif " " in primera:
+                    sep = " "
+                else:
+                    sep = ","
+
+                # Nombres de columnas
+                if formato.get() in ["PNEZD", "PENZD"]:
+                    columnas = ["Id", "A", "B", "Z", "Extra"]
+                else:
+                    columnas = ["A", "B", "Z", "Extra"]
+                df = pd.read_csv(archivo, sep=sep, header=None, names=columnas, dtype=str)
     # -------------- INSTRUCCIONES GRUPO 1 --------------
     # Aquí pueden importar librerías, crear clases, funciones y widgets
     # Ejemplo: crear una interfaz propia, botones, canvas, etc.
