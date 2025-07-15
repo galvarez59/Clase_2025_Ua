@@ -128,6 +128,38 @@ def ventana_grupo_1():
                 else:
                     columnas = ["A", "B", "Z", "Extra"]
                 df = pd.read_csv(archivo, sep=sep, header=None, names=columnas, dtype=str)
+                if formato.get() in ["PNEZD", "PENZD"]:
+                    columnas = ["Id", "A", "B", "Z", "Extra"]
+                else:
+                    columnas = ["A", "B", "Z", "Extra"]
+                df = pd.read_csv(archivo, sep=sep, header=None, names=columnas, dtype=str)
+                if formato.get() == "PNEZD":
+                    df.rename(columns={"A": "Y", "B": "X"}, inplace=True)
+                elif formato.get() == "PENZD":
+                    df.rename(columns={"A": "X", "B": "Y"}, inplace=True)
+                elif formato.get() == "ENZD":
+                    df.rename(columns={"A": "X", "B": "Y"}, inplace=True)
+                elif formato.get() == "NEZD":
+                    df.rename(columns={"A": "Y", "B": "X"}, inplace=True)
+
+                for col in ["X", "Y", "Z"]:
+                    df[col] = pd.to_numeric(df[col], errors="coerce")
+                if "Extra" in df.columns:
+                    df["Extra"] = df["Extra"].fillna("").astype(str)
+
+                cols_validas = ["X", "Y", "Z"]
+                if "Extra" in df.columns and not df["Extra"].isnull().all() and not (df["Extra"] == "").all():
+                    cols_validas.append("Extra")
+                self.df = df[cols_validas].dropna(subset=["X", "Y", "Z"])
+                self.df_filtrada = None
+
+                self._graficar(self.df)
+                self.limites = self._calcular_limites(self.df)
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo leer el archivo:\n{e}")
+
+
+                 
     # -------------- INSTRUCCIONES GRUPO 1 --------------
     # Aquí pueden importar librerías, crear clases, funciones y widgets
     # Ejemplo: crear una interfaz propia, botones, canvas, etc.
