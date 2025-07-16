@@ -160,8 +160,24 @@ def ventana_grupo_2():
             file_path = filedialog.askopenfilename(filetypes=[("Archivos de TXT/CSV/Excel", "*.txt *.csv *.xlxs")])
             if not file_path:
                 return
-
+#Selección de formatos
             formato = tk.StringVar()
+            win_formato = tk.Toplevel(self.root)
+            win_formato.title("Formato de archivo")
+            tk.Label(win_formato, text="¿Qué formato tiene el archivo?", font=("Segoe UI", 13, "bold")).pack(pady=14)
+            formatos = [
+                ("PNEZD (Punto, Norte, Este, Cota, Descripción)", "PNEZD"),
+                ("PENZD (Punto, Este, Norte, Cota, Descripción)", "PENZD"),
+                ("ENZD (Este, Norte, Cota, Descripción)", "ENZD"),
+                ("NEZD (Norte, Este, Cota, Descripción)", "NEZD"),
+            ]
+            for texto, valor in formatos:
+                ttk.Radiobutton(win_formato, text=texto, variable=formato, value=valor).pack(anchor="w", padx=20)
+            ttk.Button(win_formato, text="Aceptar", command=win_formato.destroy).pack(pady=8)
+            win_formato.wait_window()
+            if not formato.get():
+                return
+
             def seleccionar_formato():
                 ventana.destroy()
 
