@@ -143,6 +143,19 @@ def ventana_grupo_2():
             self.canvas = FigureCanvasTkAgg(self.figure, master=graph_frame)
             self.canvas.get_tk_widget().pack(fill="both", expand=True)
 
+        def elegir_vertices_mouse(self):
+            self.vertices_mouse = []
+            self.plot_points(self.df if self.df is not None else pd.DataFrame({"X":[],"Y":[],"Z":[]}))
+            if self.cid:
+                self.canvas.mpl_disconnect(self.cid)
+            self.cid = self.canvas.mpl_connect('button_press_event', self.__on_click_vertex)
+            messagebox.showinfo(
+                "Modo selección",
+                "Haz clic IZQUIERDO para poner vértices del polígono.\n"
+                "Clic DERECHO para borrar el último vértice.\n"
+                "Cuando termines, aprieta 'Filtrar por Polígono'."
+            )
+
         def detectar_duplicados(self):
             if self.df is None:
                 return
