@@ -157,9 +157,32 @@ def ventana_grupo_1():
                 self.limites = self._calcular_limites(self.df)
             except Exception as e:
                 messagebox.showerror("Error", f"No se pudo leer el archivo:\n{e}")
+                def _filtrar(self):
+            if self.df is None:
+                messagebox.showwarning("Aviso", "Importa un archivo primero.")
+                return
 
+            area = []
+            for i, (e_y, e_x) in enumerate(self.entrada_vertices):
+                try:
+                    y = float(e_y.get())
+                    x = float(e_x.get())
+                    area.append((x, y))
+                except ValueError:
+                    messagebox.showerror("Error", f"Vértice {i+1} inválido.")
+                    return
+            if len(area) < 3:
+                messagebox.showerror("Error", "Mínimo 3 vértices.")
+                return
 
-                 
+            mask = [punto_en_area(x, y, area) for x, y in zip(self.df["X"], self.df["Y"])]
+            self.df_filtrada = self.df[mask]
+            self._graficar(self.df_filtrada, area, "Región seleccionada", mantener_limites=True)
+
+        def _exportar(self):
+            if self.df is None:
+                messagebox.showwarning("Aviso", "Importa datos antes de exportar.")
+                return
     # -------------- INSTRUCCIONES GRUPO 1 --------------
     # Aquí pueden importar librerías, crear clases, funciones y widgets
     # Ejemplo: crear una interfaz propia, botones, canvas, etc.
