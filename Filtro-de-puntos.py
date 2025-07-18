@@ -183,6 +183,32 @@ def ventana_grupo_1():
             if self.df is None:
                 messagebox.showwarning("Aviso", "Importa datos antes de exportar.")
                 return
+
+            datos_exportar = self.df_filtrada if self.df_filtrada is not None else self.df
+            datos_exportar = datos_exportar.dropna(subset=["X", "Y", "Z"])
+
+            archivo = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("TXT", "*.txt")])
+            if not archivo:
+                return
+
+            try:
+                extra_col = "Extra" if "Extra" in datos_exportar.columns and not (datos_exportar["Extra"] == "").all() else None
+                cols = ["Id", "Y", "X", "Z"]
+                datos = {
+                    "Id": range(1, len(datos_exportar) + 1),
+                    "Y": datos_exportar["Y"].astype(float),
+                    "X": datos_exportar["X"].astype(float),
+                    "Z": datos_exportar["Z"].astype(float),
+                }
+                if extra_col:
+                    cols.append("Extra")
+                    datos["Extra"] = datos_exportar[extra_col].fillna("")
+                df_final = pd.DataFrame(datos)[cols]
+                df_final.to_csv(archivo, sep=",", index=False, header=False, float_format='%.3f')
+                messagebox.showinfo("Exportación", f"Archivo guardado en:\n{archivo}")
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo guardar el archivo:\n{e}")
+
     # -------------- INSTRUCCIONES GRUPO 1 --------------
     # Aquí pueden importar librerías, crear clases, funciones y widgets
     # Ejemplo: crear una interfaz propia, botones, canvas, etc.
