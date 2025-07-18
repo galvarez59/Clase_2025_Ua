@@ -45,16 +45,6 @@ def ventana_grupo_2():
 # ===   VENTANA GRUPO 3    ===
 # ============================
 def ventana_grupo_3():
-    win = tk.Toplevel(root)
-    win.title("Poligono 3")
-    win.geometry("400x250")
-    label = ttk.Label(win, text="Poly_3\nAgrega aquí tu código de filtrado", font=("Segoe UI", 14))
-    label.pack(pady=50)
-    # -------------- INSTRUCCIONES GRUPO 3 --------------
-    # Aquí pueden importar librerías, crear clases, funciones y widgets
-    # Ejemplo: crear una interfaz propia, botones, canvas, etc.
-    # Pueden eliminar el label anterior cuando agreguen su interfaz.
-    # ---------------------------------------------------
 
 # ============ VENTANA PRINCIPAL =============
 root = tk.Tk()
