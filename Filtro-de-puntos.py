@@ -6,7 +6,7 @@ from tkinter import ttk
 # ============================
 def ventana_grupo_1():
     win = tk.Toplevel(root)
-    win.title("Poligono 1")
+    win.title("Poligono 1 prueba")
     win.geometry("400x250")
     label = ttk.Label(win, text="Poly_1\nAgrega aquí tu código de filtrado", font=("Segoe UI", 14))
     label.pack(pady=50)
