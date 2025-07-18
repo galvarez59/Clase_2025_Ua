@@ -78,6 +78,20 @@ def ventana_grupo_3():
     df_filtrada = None
     limites = None
 
+#Panel grafico
+    panel_grafico = tk.Frame(win, bg="#ffffff", width=700, height=800, bd=0, relief="ridge", highlightthickness=0)
+    panel_grafico.pack(side="left", fill="both", expand=True)
+    panel_grafico.pack_propagate(False)
+
+    fig, ax = plt.subplots(figsize=(8, 8))
+    fig.patch.set_facecolor("#ffffff")
+    ax.set_facecolor("#ffffff")
+    ax.grid(True, linestyle="--", color="#a3a3a3", alpha=0.7, linewidth=1.0)
+    ax.set_axisbelow(True)
+    ax.set_aspect('equal', adjustable='box')
+    canvas = FigureCanvasTkAgg(fig, master=panel_grafico)
+    canvas.get_tk_widget().pack(expand=True, fill="both", padx=36, pady=44)
+
 
 # ============ VENTANA PRINCIPAL =============
 root = tk.Tk()
