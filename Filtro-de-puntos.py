@@ -45,6 +45,39 @@ def ventana_grupo_2():
 # ===   VENTANA GRUPO 3    ===
 # ============================
 def ventana_grupo_3():
+    import tkinter as tk
+    from tkinter import filedialog, messagebox, ttk
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+    import math
+    import os
+        # Suma de ángulos
+    def punto_en_poligono_angulo(px, py, poligono):
+        total = 0.0
+        n = len(poligono)
+        for i in range(n):
+            x1, y1 = poligono[i][0] - px, poligono[i][1] - py
+            x2, y2 = poligono[(i+1)%n][0] - px, poligono[(i+1)%n][1] - py
+            ang1 = math.atan2(y1, x1)
+            ang2 = math.atan2(y2, x2)
+            dtheta = ang2 - ang1
+            while dtheta > math.pi:
+                dtheta -= 2 * math.pi
+            while dtheta < -math.pi:
+                dtheta += 2 * math.pi
+            total += dtheta
+        return abs(total) > math.pi
+
+    win = tk.Toplevel()
+    win.title("Grupo 3 - Filtrado de Región")
+    win.geometry("1200x840")
+    win.configure(bg="#272e36")
+
+    df = None
+    df_filtrada = None
+    limites = None
+
 
 # ============ VENTANA PRINCIPAL =============
 root = tk.Tk()
