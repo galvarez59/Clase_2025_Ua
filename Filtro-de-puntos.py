@@ -195,6 +195,18 @@ def ventana_grupo_2():
                 else:
                     messagebox.showinfo("Aviso", "Los duplicados se han conservado")
 
+        def undo_duplicates(self):
+            if self.df_before_dupes is not None:
+                self.df = self.df_before_dupes
+                self.df_before_dupes = None
+                self.filtered_df = None
+                self.plot_points(self.df)
+                self.axis_limits = self.get_axis_limits(self.df)
+                self.label_total.config(text=f"Total points: {len(self.df)}")
+                self.label_filtered.config(text="Filtered points: 0")
+                self.btn_undo.pack_forget()
+                messagebox.showinfo("Deshacer", "Se restauraron los datos antes de eliminar duplicados.")
+                
         def import_txt(self):
             file_path = filedialog.askopenfilename(filetypes=[("Archivos de TXT/CSV/Excel", "*.txt *.csv *.xlxs")])
             if not file_path:
