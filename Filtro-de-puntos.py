@@ -143,6 +143,45 @@ def ventana_grupo_2():
             self.canvas = FigureCanvasTkAgg(self.figure, master=graph_frame)
             self.canvas.get_tk_widget().pack(fill="both", expand=True)
 
+        def elegir_vertices_mouse(self):
+            self.vertices_mouse = []
+            self.plot_points(self.df if self.df is not None else pd.DataFrame({"X":[],"Y":[],"Z":[]}))
+            if self.cid:
+                self.canvas.mpl_disconnect(self.cid)
+            self.cid = self.canvas.mpl_connect('button_press_event', self.__on_click_vertex)
+            messagebox.showinfo(
+                "Modo selección",
+                "Haz clic IZQUIERDO para poner vértices del polígono.\n"
+                "Clic DERECHO para borrar el último vértice.\n"
+                "Cuando termines, aprieta 'Filtrar por Polígono'."
+            )
+
+        def __on_click_vertex(self, event):
+            if event.inaxes != self.ax:
+                return
+            
+            if event.button == 1:
+                x, y = event.xdata, event.ydata
+                self.vertices_mouse.append((x, y))
+            
+            elif event.button == 3 and self.vertices_mouse:
+                self.vertices_mouse.pop()
+            else:
+                return
+            
+            self.plot_points(self.df if self.df is not None else pd.DataFrame({"X":[],"Y":[],"Z":[]}))
+            if self.vertices_mouse:
+                xs, ys = zip(*self.vertices_mouse)
+                self.ax.plot(xs, ys, 'ro-', linewidth=2, markersize=8, zorder=10)
+            self.canvas.draw()
+
+        def reset_poligono(self):
+            self.vertices_mouse = []
+            self.plot_points(self.df if self.df is not None else pd.DataFrame({"X":[],"Y":[],"Z":[]}))
+            if self.cid:
+                self.canvas.mpl_disconnect(self.cid)
+                self.cid = None
+                
         def detectar_duplicados(self):
             if self.df is None:
                 return
@@ -155,12 +194,12 @@ def ventana_grupo_2():
                     messagebox.showinfo("Limpieza completada", f"Se eliminaron {cantidad} duplicados.")
                 else:
                     messagebox.showinfo("Aviso", "Los duplicados se han conservado")
-#Importacion de datos: archivos NEZD/ENZD con 3 o 4 columnas
+
         def import_txt(self):
             file_path = filedialog.askopenfilename(filetypes=[("Archivos de TXT/CSV/Excel", "*.txt *.csv *.xlxs")])
             if not file_path:
                 return
-#Selección de formatos
+
             formato = tk.StringVar()
             win_formato = tk.Toplevel(self.root)
             win_formato.title("Formato de archivo")
