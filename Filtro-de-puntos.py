@@ -177,41 +177,20 @@ def ventana_grupo_2():
             win_formato.wait_window()
             if not formato.get():
                 return
-
-            def seleccionar_formato():
-                ventana.destroy()
-
-            ventana = tk.Toplevel(self.root)
-            ventana.title("Seleccionar formato de archivo")
-            ventana.geometry("400x300")
-            ventana.grab_set()
-            tk.Label(ventana, text="¿Qué formato tiene el archivo?", font=("Segoe UI", 12)).pack(pady=20)
-            formatos = [
-                ("PNEZD (Punto, Norte, Este, Cota, Descripción)", "PNEZD"),
-                ("PENZD (Punto, Este, Norte, Cota, Descripción)", "PENZD"),
-                ("ENZD (Este, Norte, Cota, Descripción)", "ENZD"),
-                ("NEZD (Norte, Este, Cota, Descripción)", "NEZD"),
-            ]
-            for texto, valor in formatos:
-                tk.Radiobutton(ventana, text=texto, variable=formato, value=valor, font=("Segoe UI", 11)).pack(anchor="w", padx=20)
-            tk.Button(ventana, text="Aceptar", command=seleccionar_formato, bg="#00b894", fg="white").pack(pady=10)
-            ventana.wait_window()
-
-            if not formato.get():
-                return
-
-            try:
-                # Detectar delimitador automáticamente (soporta coma, punto y coma, espacio)
-                with open(file_path, "r", encoding="utf-8") as f:
-                    first_line = f.readline()
-                if "," in first_line:
-                    sep = ","
-                elif ";" in first_line:
-                    sep = ";"
-                elif " " in first_line:
-                    sep = " "
-                else:
-                    sep = ","  # fallback
+            
+            #Selección de delimitador manual si no es Excel
+            if file_path.endswith(".xlsx"):
+                delim = None
+            else:
+                delimitadores = {",": "Coma (,)", ";": "Punto y coma (;)", " ": "Espacio"}
+                delim = tk.StringVar(value=",")
+                win_delim = tk.Toplevel(self.root)
+                win_delim.title("Escoge delimitador")
+                tk.Label(win_delim, text="¿Qué delimitador tiene el archivo?", font=("Segoe UI", 12)).pack(pady=10)
+                for key, label in delimitadores.items():
+                    ttk.Radiobutton(win_delim, text=label, variable=delim, value=key).pack(anchor="w", padx=20)
+                ttk.Button(win_delim, text="Aceptar", command=win_delim.destroy).pack(pady=10)
+                win_delim.wait_window()
 
                 # Definir nombres de columnas según formato (sin encabezado en archivo)
                 if formato.get() in ["PNEZD", "PENZD"]:
@@ -247,7 +226,8 @@ def ventana_grupo_2():
                 self.axis_limits = self.get_axis_limits(self.df)
                 self.label_total.config(text=f"Total points: {len(self.df)}")
                 self.label_filtered.config(text="Filtered points: 0")
-            except Exception as e:
+       
+                except Exception as e:
                 messagebox.showerror("Error", f"No se pudo leer el archivo:\n{e}")
 
         def filtrar_puntos(self):
