@@ -156,6 +156,13 @@ def ventana_grupo_2():
                 "Cuando termines, aprieta 'Filtrar por Polígono'."
             )
 
+        def reset_poligono(self):
+            self.vertices_mouse = []
+            self.plot_points(self.df if self.df is not None else pd.DataFrame({"X":[],"Y":[],"Z":[]}))
+            if self.cid:
+                self.canvas.mpl_disconnect(self.cid)
+                self.cid = None
+                
         def detectar_duplicados(self):
             if self.df is None:
                 return
@@ -168,7 +175,7 @@ def ventana_grupo_2():
                     messagebox.showinfo("Limpieza completada", f"Se eliminaron {cantidad} duplicados.")
                 else:
                     messagebox.showinfo("Aviso", "Los duplicados se han conservado")
-#Importacion de datos: archivos NEZD/ENZD con 3 o 4 columnas
+
         def import_txt(self):
             file_path = filedialog.askopenfilename(filetypes=[("Archivos de TXT/CSV/Excel", "*.txt *.csv *.xlxs")])
             if not file_path:
