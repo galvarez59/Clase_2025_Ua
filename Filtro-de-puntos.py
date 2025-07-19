@@ -208,6 +208,27 @@ def ventana_grupo_1():
                 messagebox.showinfo("Exportación", f"Archivo guardado en:\n{archivo}")
             except Exception as e:
                 messagebox.showerror("Error", f"No se pudo guardar el archivo:\n{e}")
+        def _calcular_limites(self, df):
+            min_x, max_x = df["X"].min(), df["X"].max()
+            min_y, max_y = df["Y"].min(), df["Y"].max()
+            rango_x = max_x - min_x
+            rango_y = max_y - min_y
+            centro_x = (max_x + min_x) / 2
+            centro_y = (max_y + min_y) / 2
+            lado = max(rango_x, rango_y) * 1.1
+            xlim = (centro_x - lado / 2, centro_x + lado / 2)
+            ylim = (centro_y - lado / 2, centro_y + lado / 2)
+            return xlim, ylim
+
+        def _graficar(self, df, area=None, titulo="Puntos", mantener_limites=False):
+            self.ax.clear()
+            self.ax.grid(True, linestyle=":", alpha=0.35)
+            self.ax.set_aspect('equal', adjustable='box')
+            if df is not None and not df.empty:
+                self.ax.scatter(df["X"], df["Y"], s=28, alpha=0.82, c="#2874a6", edgecolors="#1b4f72", linewidths=0.7, zorder=3)
+            if area is not None and len(area) >= 3:
+                xs, ys = zip(*area)
+                self.ax.plot(list(xs) + [xs[0]], list(ys) + [ys[0]], color="#b9770e", linewidth=2.2, zorder=5, label="Área")
 
     # -------------- INSTRUCCIONES GRUPO 1 --------------
     # Aquí pueden importar librerías, crear clases, funciones y widgets
