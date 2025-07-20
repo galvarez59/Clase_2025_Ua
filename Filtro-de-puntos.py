@@ -242,7 +242,7 @@ def ventana_grupo_2():
                     ttk.Radiobutton(win_delim, text=label, variable=delim, value=key).pack(anchor="w", padx=20)
                 ttk.Button(win_delim, text="Aceptar", command=win_delim.destroy).pack(pady=10)
                 win_delim.wait_window()
-                # Paso 3: Leer archivo y mostrar preview
+                #Leer archivo y mostrar preview
             try:
                 if file_path.endswith(".xlsx"):
                     df_preview = pd.read_excel(file_path, header=None)
