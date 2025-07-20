@@ -230,6 +230,24 @@ def ventana_grupo_2():
                     ttk.Radiobutton(win_delim, text=label, variable=delim, value=key).pack(anchor="w", padx=20)
                 ttk.Button(win_delim, text="Aceptar", command=win_delim.destroy).pack(pady=10)
                 win_delim.wait_window()
+                # Paso 3: Leer archivo y mostrar preview
+            try:
+                if file_path.endswith(".xlsx"):
+                    df_preview = pd.read_excel(file_path, header=None)
+                else:
+                    df_preview = pd.read_csv(file_path, sep=delim.get(), header=None, dtype=str)
+                win_preview = tk.Toplevel(self.root)
+                win_preview.title("Vista previa de datos")
+                tk.Label(win_preview, text="Primeras filas del archivo", font=("Segoe UI", 12, "bold")).pack(pady=8)
+                text_preview = tk.Text(win_preview, width=80, height=10, font=("Consolas", 10))
+                text_preview.pack()
+                for row in df_preview.head(5).values:
+                    text_preview.insert("end", " | ".join(str(v) for v in row) + "\n")
+                ttk.Button(win_preview, text="Continuar", command=win_preview.destroy).pack(pady=7)
+                win_preview.wait_window()
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo leer el archivo:\n{e}")
+                return
 
                 # Definir nombres de columnas según formato (sin encabezado en archivo)
                 if formato.get() in ["PNEZD", "PENZD"]:
