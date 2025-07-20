@@ -91,7 +91,7 @@ def ventana_grupo_3():
     ax.set_aspect('equal', adjustable='box')
     canvas = FigureCanvasTkAgg(fig, master=panel_grafico)
     canvas.get_tk_widget().pack(expand=True, fill="both", padx=36, pady=44)
-#Panel de controles
+#Panel de controles 
     panel_controles = tk.Frame(win, bg="#f8e9a1", width=500, height=800, bd=0, relief="ridge", highlightthickness=0)
     panel_controles.pack(side="right", fill="y")
     panel_controles.pack_propagate(False)
