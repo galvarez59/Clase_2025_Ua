@@ -91,6 +91,21 @@ def ventana_grupo_3():
     ax.set_aspect('equal', adjustable='box')
     canvas = FigureCanvasTkAgg(fig, master=panel_grafico)
     canvas.get_tk_widget().pack(expand=True, fill="both", padx=36, pady=44)
+#Panel de controles
+    panel_controles = tk.Frame(win, bg="#f8e9a1", width=500, height=800, bd=0, relief="ridge", highlightthickness=0)
+    panel_controles.pack(side="right", fill="y")
+    panel_controles.pack_propagate(False)
+
+    tk.Label(panel_controles, text="Filtro\nGrupo 3", font=("Montserrat", 26, "bold"), bg="#f8e9a1", fg="#a76d60").pack(pady=36)
+    sep1 = tk.Frame(panel_controles, height=3, bg="#a76d60")
+    sep1.pack(fill="x", padx=44, pady=10)
+# Entrada de archivos
+    entrada_archivo_frame = tk.Frame(panel_controles, bg="#f8e9a1")
+    entrada_archivo_frame.pack(pady=12)
+
+    archivo_path_var = tk.StringVar()
+    archivo_path_label = tk.Label(entrada_archivo_frame, textvariable=archivo_path_var, font=("Consolas", 11, "italic"), bg="#f8e9a1", fg="#a76d60")
+    archivo_path_label.pack(pady=2)
 
 
 # ============ VENTANA PRINCIPAL =============
