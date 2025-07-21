@@ -243,7 +243,7 @@ def ventana_grupo_1():
                 self.ax.set_xlim(*xlim)
                 self.ax.set_ylim(*ylim)
             self.canvas.draw()
- # Lanzar ventana
+ # Lanzar ventana Finalizada
     root_g1 = tk.Toplevel()
     AreaUI(root_g1)
 
