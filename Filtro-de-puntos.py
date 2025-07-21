@@ -231,6 +231,7 @@ def ventana_grupo_1():
                 self.ax.plot(list(xs) + [xs[0]], list(ys) + [ys[0]], color="#b9770e", linewidth=2.2, zorder=5, label="Área")
                 self.ax.legend()
                 self.ax.set_title(titulo, fontsize=15, fontweight="bold")
+            self.ax.set_title(titulo, fontsize=15, fontweight="bold")
             self.ax.set_xlabel("X", fontsize=13)
             self.ax.set_ylabel("Y", fontsize=13)
             if mantener_limites and self.limites is not None:
