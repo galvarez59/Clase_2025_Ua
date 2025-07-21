@@ -157,7 +157,7 @@ def ventana_grupo_1():
                 self.limites = self._calcular_limites(self.df)
             except Exception as e:
                 messagebox.showerror("Error", f"No se pudo leer el archivo:\n{e}")
-                def _filtrar(self):
+        def _filtrar(self):
             if self.df is None:
                 messagebox.showwarning("Aviso", "Importa un archivo primero.")
                 return
@@ -229,6 +229,22 @@ def ventana_grupo_1():
             if area is not None and len(area) >= 3:
                 xs, ys = zip(*area)
                 self.ax.plot(list(xs) + [xs[0]], list(ys) + [ys[0]], color="#b9770e", linewidth=2.2, zorder=5, label="Área")
+                self.ax.legend()
+                self.ax.set_title(titulo, fontsize=15, fontweight="bold")
+            self.ax.set_xlabel("X", fontsize=13)
+            self.ax.set_ylabel("Y", fontsize=13)
+            if mantener_limites and self.limites is not None:
+                xlim, ylim = self.limites
+                self.ax.set_xlim(*xlim)
+                self.ax.set_ylim(*ylim)
+            elif df is not None and not df.empty:
+                xlim, ylim = self._calcular_limites(df)
+                self.ax.set_xlim(*xlim)
+                self.ax.set_ylim(*ylim)
+            self.canvas.draw()
+ # Lanzar ventana
+    root_g1 = tk.Toplevel()
+    AreaUI(root_g1)
 
     # -------------- INSTRUCCIONES GRUPO 1 --------------
     # Aquí pueden importar librerías, crear clases, funciones y widgets
