@@ -296,7 +296,7 @@ def ventana_grupo_2():
                 self.label_total.config(text=f"Total points: {len(self.df)}")
                 self.label_filtered.config(text="Filtered points: 0")
        
-                except Exception as e:
+            except Exception as e:
                 messagebox.showerror("Error", f"No se pudo leer el archivo:\n{e}")
 
         def filtrar_puntos(self):
@@ -325,8 +325,29 @@ def ventana_grupo_2():
             self.filtered_df = self.df[mask]
             self.plot_points(self.filtered_df, poly, title="Puntos dentro del polígono definido", keep_limits=True)
             self.label_filtered.config(text=f"Filtered points: {len(self.filtered_df)}")
- 
 
+        def export_txt(self):
+            if self.df is None:
+                messagebox.showwarning("Advertencia", "Primero debes importar un archivo.")
+                return
+            data_to_export = self.filtered_df if self.filtered_df is not None else self.df
+            data_to_export = data_to_export.dropna(subset=["X", "Y", "Z"])
+            formato = tk.StringVar()
+            delimitador = tk.StringVar()
+            def confirmar():
+                opciones.destroy()
+            opciones = tk.Toplevel(self.root)
+            opciones.title("Opciones de Exportación")
+            opciones.geometry("400x400")
+            opciones.grab_set()
+            tk.Label(opciones, text="Selecciona el formato de exportación:", font=("Segoe UI", 12)).pack(pady=10)
+            formatos = [
+                ("PNEZD (Punto, Norte, Este, Cota, Descripción)", "PNEZD"),
+                ("PENZD (Punto, Este, Norte, Cota, Descripción)", "PENZD"),
+                ("ENZD (Este, Norte, Cota, Descripción)", "ENZD"),
+                ("NEZD (Norte, Este, Cota, Descripción)", "NEZD"),
+            ]
+            
     win2 = tk.Toplevel()
     app = PointFilterApp(win2)
 
