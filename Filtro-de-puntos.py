@@ -144,6 +144,79 @@ def ventana_grupo_3():
     btn_filtrar = tk.Button(panel_controles, text="🎯 Filtrar", font=("Montserrat", 16, "bold"), bg="#a76d60", fg="#fffbe7",
                             activebackground="#f4b393", activeforeground="#272e36", relief="raised", bd=3, command=lambda: filtrar_area())
     btn_filtrar.pack(pady=30, padx=80, fill="x")
+#Funciones internas
+    def importar():
+        nonlocal df, df_filtrada, limites
+        archivo = archivo_path_var.get()
+        if not archivo or not os.path.isfile(archivo):
+            messagebox.showwarning("Aviso", "Selecciona primero un archivo válido (usa el botón).")
+            return
+
+        formatos = [
+            ("PNEZD (Y, X, Z, Descripción)", "PNEZD"),
+            ("PENZD (X, Y, Z, Descripción)", "PENZD"),
+            ("ENZD (X, Y, Z, Descripción)", "ENZD"),
+            ("NEZD (Y, X, Z, Descripción)", "NEZD"),
+        ]
+        formato_var = tk.StringVar()
+        formato_var.set(formatos[0][1])
+        win_form = tk.Toplevel(win)
+        win_form.title("Formato de archivo")
+        win_form.geometry("440x210")
+        win_form.configure(bg="#68b0ab")
+
+        selected_format_holder = {"value": None}
+
+        tk.Label(win_form, text="Tipo de archivo/orden de columnas:", font=("Montserrat", 15), bg="#68b0ab", fg="#fffbe7").pack(pady=14)
+        formato_combo = ttk.Combobox(win_form, values=[f[0] for f in formatos], font=("Montserrat", 13), state="readonly")
+        formato_combo.current(0)
+        formato_combo.pack(pady=8)
+
+        def aceptar():
+            selected_format_holder["value"] = formato_combo.get()
+            win_form.destroy()
+
+        ttk.Button(win_form, text="Aceptar", command=aceptar).pack(pady=18)
+        win_form.wait_window()
+
+        seleccionado = selected_format_holder["value"]
+        if not seleccionado:
+            return
+        formato_real = [f[1] for f in formatos if f[0] == seleccionado][0] if seleccionado else formatos[0][1]
+
+        try:
+            with open(archivo, "r", encoding="utf-8") as f:
+                linea = f.readline()
+            sep = ","
+            if ";" in linea: sep = ";"
+            elif " " in linea: sep = " "
+
+            if formato_real == "PNEZD":
+                columnas = ["Y", "X", "Z", "Descripción"]
+            elif formato_real == "PENZD":
+                columnas = ["X", "Y", "Z", "Descripción"]
+            elif formato_real == "ENZD":
+                columnas = ["X", "Y", "Z", "Descripción"]
+            elif formato_real == "NEZD":
+                columnas = ["Y", "X", "Z", "Descripción"]
+            else:
+                columnas = ["X", "Y", "Z", "Descripción"]
+            df_archivo = pd.read_csv(archivo, sep=sep, header=None, names=columnas, dtype=str)
+            for col in ["X", "Y", "Z"]:
+                df_archivo[col] = pd.to_numeric(df_archivo[col], errors="coerce")
+            if "Descripción" in df_archivo.columns:
+                df_archivo["Descripción"] = df_archivo["Descripción"].fillna("").astype(str)
+            columnas_finales = ["X", "Y", "Z"]
+            if "Descripción" in df_archivo.columns and not df_archivo["Descripción"].isnull().all() and not (df_archivo["Descripción"] == "").all():
+                columnas_finales.append("Descripción")
+            df = df_archivo[columnas_finales].dropna(subset=["X", "Y", "Z"])
+            df_filtrada = None
+            dibujar(df)
+            limites = calcular_limites(df)
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo importar:\n{e}")
+
+
 
 
 
