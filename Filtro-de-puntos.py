@@ -354,7 +354,17 @@ def ventana_grupo_2():
             xlim = (df["X"].min() - x_margin, df["X"].max() + x_margin)
             ylim = (df["Y"].min() - y_margin, df["Y"].max() + y_margin)
             return xlim, ylim
-                       
+
+        def plot_points(self, df, poly=None, title="Puntos Originales", keep_limits=False):
+            self.ax.clear()
+            self.ax.grid(True, linestyle="--", alpha=0.3)
+            if df is not None and not df.empty:
+                self.ax.scatter(df["X"], df["Y"], s=40, alpha=0.9, c="#0984e3", edgecolors="#34495e", linewidths=1, zorder=3)
+            if poly is not None and len(poly) >= 3:
+                xs, ys = zip(*poly)
+                self.ax.plot(list(xs) + [xs[0]], list(ys) + [ys[0]], color="#d63031", linewidth=3, zorder=5, label="Polígono")
+                self.ax.legend()
+                           
     win2 = tk.Toplevel()
     app = PointFilterApp(win2)
 
