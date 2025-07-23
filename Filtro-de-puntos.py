@@ -347,7 +347,14 @@ def ventana_grupo_2():
                 ("ENZD (Este, Norte, Cota, Descripción)", "ENZD"),
                 ("NEZD (Norte, Este, Cota, Descripción)", "NEZD"),
             ]
-            
+
+        def get_axis_limits(self, df):
+            x_margin = (df["X"].max() - df["X"].min()) * 0.05
+            y_margin = (df["Y"].max() - df["Y"].min()) * 0.05
+            xlim = (df["X"].min() - x_margin, df["X"].max() + x_margin)
+            ylim = (df["Y"].min() - y_margin, df["Y"].max() + y_margin)
+            return xlim, ylim
+                       
     win2 = tk.Toplevel()
     app = PointFilterApp(win2)
 
