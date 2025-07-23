@@ -106,6 +106,45 @@ def ventana_grupo_3():
     archivo_path_var = tk.StringVar()
     archivo_path_label = tk.Label(entrada_archivo_frame, textvariable=archivo_path_var, font=("Consolas", 11, "italic"), bg="#f8e9a1", fg="#a76d60")
     archivo_path_label.pack(pady=2)
+    def seleccionar_archivo():
+        arch = filedialog.askopenfilename(filetypes=[("TXT/CSV", "*.txt *.csv")])
+        if arch:
+            archivo_path_var.set(arch)
+
+    btn_buscar_archivo = tk.Button(entrada_archivo_frame, text="📂 Seleccionar archivo", font=("Montserrat", 14), bg="#fffbe7", fg="#a76d60",
+                                   activebackground="#f4b393", activeforeground="#fffbe7", relief="raised", bd=2, command=seleccionar_archivo)
+    btn_buscar_archivo.pack(pady=8, padx=10)
+
+    btn_importar = tk.Button(panel_controles, text="Cargar archivo", font=("Montserrat", 16), bg="#fffbe7", fg="#a76d60",
+                             activebackground="#f4b393", activeforeground="#fffbe7", relief="raised", bd=2, command=lambda: importar())
+    btn_importar.pack(pady=8, padx=70, fill="x")
+
+    btn_exportar = tk.Button(panel_controles, text="💾 Exportar", font=("Montserrat", 16), bg="#fffbe7", fg="#a76d60",
+                             activebackground="#f4b393", activeforeground="#fffbe7", relief="raised", bd=2, command=lambda: exportar())
+    btn_exportar.pack(pady=8, padx=70, fill="x")
+
+    sep2 = tk.Frame(panel_controles, height=3, bg="#a76d60")
+    sep2.pack(fill="x", padx=44, pady=16)
+
+    tk.Label(panel_controles, text="Vértices del área (X, Y)", font=("Montserrat", 17, "bold"), bg="#f8e9a1", fg="#272e36").pack(pady=10)
+    verts_entries = []
+    verts_frame = tk.Frame(panel_controles, bg="#f8e9a1")
+    verts_frame.pack(pady=3)
+    for i in range(4):
+        fila = tk.Frame(verts_frame, bg="#f8e9a1")
+        fila.pack(pady=5)
+        tk.Label(fila, text=f"X{i+1}:", font=("Montserrat", 14), bg="#f8e9a1", fg="#a76d60").pack(side="left")
+        entry_x = ttk.Entry(fila, width=9, font=("Consolas", 13))
+        entry_x.pack(side="left", padx=3)
+        tk.Label(fila, text="Y:", font=("Montserrat", 14), bg="#f8e9a1", fg="#a76d60").pack(side="left")
+        entry_y = ttk.Entry(fila, width=9, font=("Consolas", 13))
+        entry_y.pack(side="left")
+        verts_entries.append((entry_x, entry_y))
+
+    btn_filtrar = tk.Button(panel_controles, text="🎯 Filtrar", font=("Montserrat", 16, "bold"), bg="#a76d60", fg="#fffbe7",
+                            activebackground="#f4b393", activeforeground="#272e36", relief="raised", bd=3, command=lambda: filtrar_area())
+    btn_filtrar.pack(pady=30, padx=80, fill="x")
+
 
 
 # ============ VENTANA PRINCIPAL =============
