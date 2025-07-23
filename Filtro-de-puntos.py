@@ -226,6 +226,9 @@ def ventana_grupo_1():
             self.ax.set_aspect('equal', adjustable='box')
             if df is not None and not df.empty:
                 self.ax.scatter(df["X"], df["Y"], s=28, alpha=0.82, c="#a228a6", edgecolors="#721b5e", linewidths=0.7, zorder=3)
+                color_puntos = "#28a745" if area else "#2874a6"  # Verde si es filtrado, azul si no
+                self.ax.scatter(df["X"], df["Y"], s=28, alpha=0.82, c=color_puntos,
+                        edgecolors="#1b4f72", linewidths=0.7, zorder=5, label="Área")
             if area is not None and len(area) >= 3:
                 xs, ys = zip(*area)
                 self.ax.plot(list(xs) + [xs[0]], list(ys) + [ys[0]], color="#b9770e", linewidth=2.2, zorder=5, label="Área")
