@@ -215,6 +215,107 @@ def ventana_grupo_3():
             limites = calcular_limites(df)
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo importar:\n{e}")
+            def filtrar_area():
+             nonlocal df, df_filtrada
+        if df is None:
+            messagebox.showwarning("Aviso", "Primero importa datos.")
+            return
+        area = []
+        for i, (entry_x, entry_y) in enumerate(verts_entries):
+            try:
+                x = float(entry_x.get())
+                y = float(entry_y.get())
+                area.append((x, y))
+            except ValueError:
+                messagebox.showerror("Error", f"Vértice {i+1} inválido.")
+                return
+        if len(area) < 3:
+            messagebox.showerror("Error", "Debes ingresar mínimo 3 vértices.")
+            return
+        mask = [punto_en_poligono_angulo(x, y, area) for x, y in zip(df["X"], df["Y"])]
+        df_filtrada = df[mask]
+        dibujar(df_filtrada, area, "Área seleccionada", mantener_limites=True)
+
+    def exportar():
+        nonlocal df, df_filtrada
+        if df is None:
+            messagebox.showwarning("Aviso", "No hay datos para exportar.")
+            return
+        datos = df_filtrada if df_filtrada is not None else df
+        datos = datos.dropna(subset=["X", "Y", "Z"])
+        archivo = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("TXT", "*.txt")])
+        if not archivo:
+            return
+        try:
+            extra = "Descripción" if "Descripción" in datos.columns and not (datos["Descripción"] == "").all() else None
+            cols = ["Id", "X", "Y", "Z"]
+            datos_out = {
+                "Id": range(1, len(datos) + 1),
+                "X": datos["X"].astype(float),
+                "Y": datos["Y"].astype(float),
+                "Z": datos["Z"].astype(float),
+            }
+            if extra:
+                cols.append("Descripción")
+                datos_out["Descripción"] = datos[extra].fillna("")
+            df_final = pd.DataFrame(datos_out)[cols]
+            df_final.to_csv(archivo, sep=",", index=False, header=False, float_format='%.3f')
+            messagebox.showinfo("Exportación", f"Archivo guardado en:\n{archivo}")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo guardar:\n{e}")
+
+    def calcular_limites(df_local):
+        min_x, max_x = df_local["X"].min(), df_local["X"].max()
+        min_y, max_y = df_local["Y"].min(), df_local["Y"].max()
+        rango_x = max_x - min_x
+        rango_y = max_y - min_y
+        centro_x = (max_x + min_x) / 2
+        centro_y = (max_y + min_y) / 2
+        lado = max(rango_x, rango_y) * 1.13
+        xlim = (centro_x - lado / 2, centro_x + lado / 2)
+        ylim = (centro_y - lado / 2, centro_y + lado / 2)
+        return xlim, ylim
+
+    def dibujar(df_local, area=None, titulo="Puntos", mantener_limites=False):
+        ax.clear()
+        # GRILLA SIEMPRE VISIBLE Y DESTACADA
+        ax.grid(True, linestyle="--", color="#a3a3a3", alpha=0.7, linewidth=1.0)
+        ax.set_axisbelow(True)
+        ax.set_aspect('equal', adjustable='box')
+        if df_local is not None and not df_local.empty:
+            ax.scatter(df_local["X"], df_local["Y"], s=38, alpha=0.92, c="#f76c6c", edgecolors="#383838", linewidths=1.7, zorder=3)
+        if area is not None and len(area) >= 3:
+            xs, ys = zip(*area)
+            ax.plot(list(xs) + [xs[0]], list(ys) + [ys[0]], color="#68b0ab", linewidth=4, zorder=7, label="Área")
+            ax.legend()
+        ax.set_title(titulo, fontsize=18, fontweight="bold", color="#f76c6c")
+        ax.set_xlabel("X", fontsize=15, color="#272e36")
+        ax.set_ylabel("Y", fontsize=15, color="#272e36")
+
+        if area is not None and len(area) >= 3:
+            puntos_x = list(df_local["X"]) if df_local is not None and not df_local.empty else []
+            puntos_y = list(df_local["Y"]) if df_local is not None and not df_local.empty else []
+            poligono_x = [xy[0] for xy in area]
+            poligono_y = [xy[1] for xy in area]
+            todos_x = puntos_x + poligono_x
+            todos_y = puntos_y + poligono_y
+            min_x, max_x = min(todos_x), max(todos_x)
+            min_y, max_y = min(todos_y), max(todos_y)
+            rango_x = max_x - min_x
+            rango_y = max_y - min_y
+            padding = max(rango_x, rango_y) * 0.12 if max(rango_x, rango_y) > 0 else 1
+            ax.set_xlim(min_x - padding, max_x + padding)
+            ax.set_ylim(min_y - padding, max_y + padding)
+        elif mantener_limites and limites is not None:
+            xlim, ylim = limites
+            ax.set_xlim(*xlim)
+            ax.set_ylim(*ylim)
+        elif df_local is not None and not df_local.empty:
+            xlim, ylim = calcular_limites(df_local)
+            ax.set_xlim(*xlim)
+            ax.set_ylim(*ylim)
+        canvas.draw()
+
 
 
 
