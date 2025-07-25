@@ -347,7 +347,83 @@ def ventana_grupo_2():
                 ("ENZD (Este, Norte, Cota, Descripción)", "ENZD"),
                 ("NEZD (Norte, Este, Cota, Descripción)", "NEZD"),
             ]
+            for texto, valor in formatos:
+                tk.Radiobutton(opciones, text=texto, variable=formato, value=valor).pack(anchor="w", padx=20)
+            tk.Label(opciones, text="Selecciona el delimitador:", font=("Segoe UI", 12)).pack(pady=10)
+            delimitadores = [("Coma (,)", ","), ("Punto y coma (;)", ";"), ("Espacio", " ")]
+            for texto, valor in delimitadores:
+                tk.Radiobutton(opciones, text=texto, variable=delimitador, value=valor).pack(anchor="w", padx=20)
+            tk.Button(opciones, text="Aceptar", command=confirmar, bg="#0984e3", fg="white").pack(pady=20)
+            opciones.wait_window()
+            if not formato.get() or not delimitador.get():
+                return
 
+            desc_col = "Descripción" if "Descripción" in data_to_export.columns and not (data_to_export["Descripción"] == "").all() else None
+            if formato.get() == "PNEZD":
+                export_cols = ["Punto", "Norte", "Este", "Cota"]
+                data = {
+                    "Punto": range(1, len(data_to_export) + 1),
+                    "Norte": data_to_export["Y"].astype(float),
+                    "Este": data_to_export["X"].astype(float),
+                    "Cota": data_to_export["Z"].astype(float),
+                }
+            elif formato.get() == "PENZD":
+                export_cols = ["Punto", "Este", "Norte", "Cota"]
+                data = {
+                    "Punto": range(1, len(data_to_export) + 1),
+                    "Este": data_to_export["X"].astype(float),
+                    "Norte": data_to_export["Y"].astype(float),
+                    "Cota": data_to_export["Z"].astype(float),
+                }
+            elif formato.get() == "ENZD":
+                export_cols = ["Este", "Norte", "Cota"]
+                data = {
+                    "Este": data_to_export["X"].astype(float),
+                    "Norte": data_to_export["Y"].astype(float),
+                    "Cota": data_to_export["Z"].astype(float),
+                }
+            elif formato.get() == "NEZD":
+                export_cols = ["Norte", "Este", "Cota"]
+                data = {
+                    "Norte": data_to_export["Y"].astype(float),
+                    "Este": data_to_export["X"].astype(float),
+                    "Cota": data_to_export["Z"].astype(float),
+                }
+            if desc_col:
+                export_cols.append("Descripción")
+                data["Descripción"] = data_to_export[desc_col].fillna("")
+            export_df = pd.DataFrame(data)[export_cols]
+            export_df = export_df.dropna(how="all")
+            preview_win = tk.Toplevel(self.root)
+            preview_win.title("Vista previa de exportación")
+            preview_win.geometry("850x450")
+            tk.Label(preview_win, text="Vista previa de los primeros registros a exportar:", font=("Segoe UI", 12, "bold")).pack(pady=8)
+            text_preview = tk.Text(preview_win, width=100, height=18, font=("Consolas", 10))
+            text_preview.pack()
+            header_line = delimitador.get().join(export_df.columns.tolist())
+            text_preview.insert("end", header_line + "\n" + ("-"*len(header_line)) + "\n")
+            preview_data = export_df.head(20)
+            for row in preview_data.values:
+                line = delimitador.get().join([str(v) for v in row])
+                text_preview.insert("end", line + "\n")
+            tk.Label(preview_win, text=f"Total a exportar: {len(export_df)} registros", font=("Segoe UI", 11)).pack(pady=6)
+            def do_export():
+                preview_win.destroy()
+                file_path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("TXT Files", "*.txt")])
+                if not file_path:
+                    return
+                try:
+                    export_df.to_csv(file_path, sep=delimitador.get(), index=False, header=False, float_format='%.3f')
+                    messagebox.showinfo("Éxito", f"Archivo exportado correctamente:\n{file_path}")
+                except Exception as e:
+                    messagebox.showerror("Error", f"No se pudo exportar el archivo:\n{e}")
+            def cancel_export():
+                preview_win.destroy()
+            btn_exportar = tk.Button(preview_win, text="Exportar", command=do_export, bg="#0984e3", fg="white", font=("Segoe UI", 11, "bold"))
+            btn_exportar.pack(side="left", padx=70, pady=10)
+            btn_cancelar = tk.Button(preview_win, text="Cancelar", command=cancel_export, bg="#d63031", fg="white", font=("Segoe UI", 11, "bold"))
+            btn_cancelar.pack(side="right", padx=70, pady=10)
+            
         def get_axis_limits(self, df):
             x_margin = (df["X"].max() - df["X"].min()) * 0.05
             y_margin = (df["Y"].max() - df["Y"].min()) * 0.05
