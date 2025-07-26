@@ -249,6 +249,12 @@ def ventana_grupo_1():
  # Lanzar ventana Finalizada
     root_g1 = tk.Toplevel()
     AreaUI(root_g1)
+    # Botón para volver al menú principal
+    def volver_menu():
+        root_g1.destroy()  # Cierra la ventana actual del grupo 1
+
+    boton_volver = ttk.Button(root_g1, text="Volver al Menú Principal", command=volver_menu)
+    boton_volver.pack(pady=10)
 
     # -------------- INSTRUCCIONES GRUPO 1 --------------
     # Aquí pueden importar librerías, crear clases, funciones y widgets
