@@ -187,11 +187,12 @@ def ventana_grupo_1():
             datos_exportar = self.df_filtrada if self.df_filtrada is not None else self.df
             datos_exportar = datos_exportar.dropna(subset=["X", "Y", "Z"])
 
-            archivo = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("TXT", "*.txt")])
-            if not archivo:
-                return
-
-            try:
+            # Pregunta si exportar JSON o TXT
+            tipo = messagebox.askquestion("Exportar", "¿Exportar en formato JSON?\n(Si eliges 'No', se exporta en TXT)", icon="question")
+            if tipo == "yes":
+                archivo = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON", "*.json")])
+                if not archivo:
+                    return
                 extra_col = "Extra" if "Extra" in datos_exportar.columns and not (datos_exportar["Extra"] == "").all() else None
                 cols = ["Id", "Y", "X", "Z"]
                 datos = {
@@ -204,10 +205,33 @@ def ventana_grupo_1():
                     cols.append("Extra")
                     datos["Extra"] = datos_exportar[extra_col].fillna("")
                 df_final = pd.DataFrame(datos)[cols]
-                df_final.to_csv(archivo, sep=",", index=False, header=False, float_format='%.3f')
-                messagebox.showinfo("Exportación", f"Archivo guardado en:\n{archivo}")
-            except Exception as e:
-                messagebox.showerror("Error", f"No se pudo guardar el archivo:\n{e}")
+                try:
+                    df_final.to_json(archivo, orient="records", force_ascii=False, indent=2)
+                    messagebox.showinfo("Exportación", f"Archivo guardado en:\n{archivo}")
+                except Exception as e:
+                    messagebox.showerror("Error", f"No se pudo guardar el archivo:\n{e}")
+            else:
+                archivo = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("TXT", "*.txt")])
+                if not archivo:
+                    return
+                extra_col = "Extra" if "Extra" in datos_exportar.columns and not (datos_exportar["Extra"] == "").all() else None
+                cols = ["Id", "Y", "X", "Z"]
+                datos = {
+                    "Id": range(1, len(datos_exportar) + 1),
+                    "Y": datos_exportar["Y"].astype(float),
+                    "X": datos_exportar["X"].astype(float),
+                    "Z": datos_exportar["Z"].astype(float),
+                }
+                if extra_col:
+                    cols.append("Extra")
+                    datos["Extra"] = datos_exportar[extra_col].fillna("")
+                df_final = pd.DataFrame(datos)[cols]
+                try:
+                    df_final.to_csv(archivo, sep=",", index=False, header=False, float_format='%.3f')
+                    messagebox.showinfo("Exportación", f"Archivo guardado en:\n{archivo}")
+                except Exception as e:
+                    messagebox.showerror("Error", f"No se pudo guardar el archivo:\n{e}")
+                    
         def _calcular_limites(self, df):
             min_x, max_x = df["X"].min(), df["X"].max()
             min_y, max_y = df["Y"].min(), df["Y"].max()
@@ -256,17 +280,6 @@ def ventana_grupo_1():
     boton_volver = ttk.Button(root_g1, text="Volver al Menú Principal", command=volver_menu)
     boton_volver.pack(pady=10)
 
-    # -------------- INSTRUCCIONES GRUPO 1 --------------
-    # Aquí pueden importar librerías, crear clases, funciones y widgets
-    # Ejemplo: crear una interfaz propia, botones, canvas, etc.
-    # Pueden eliminar el label anterior cuando agreguen su interfaz.
-    # ---------------------------------------------------
-
-    # -------------- INSTRUCCIONES GRUPO 1 --------------
-    # Aquí pueden importar librerías, crear clases, funciones y widgets
-    # Ejemplo: crear una interfaz propia, botones, canvas, etc.
-    # Pueden eliminar el label anterior cuando agreguen su interfaz.
-    # ---------------------------------------------------
 
 # ===================================
 # ===   VENTANA GRUPO 2 Ejemplo   ===
