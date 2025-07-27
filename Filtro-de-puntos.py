@@ -206,7 +206,25 @@ def ventana_grupo_2():
                 self.label_filtered.config(text="Filtered points: 0")
                 self.btn_undo.pack_forget()
                 messagebox.showinfo("Deshacer", "Se restauraron los datos antes de eliminar duplicados.")
-                
+
+        def reset_all(self):
+            self.df = None
+            self.filtered_df = None
+            self.df_before_dupes = None
+            self.axis_limits = None
+            self.vertices_mouse = []
+            self.plot_points(pd.DataFrame({"X":[],"Y":[],"Z":[]}))
+            for entry_n, entry_e in self.vertex_entries:
+                entry_n.delete(0, "end")
+                entry_e.delete(0, "end")
+            self.label_total.config(text="Total points: 0")
+            self.label_filtered.config(text="Filtered points: 0")
+            self.btn_undo.pack_forget()
+            if self.cid:
+                self.canvas.mpl_disconnect(self.cid)
+                self.cid = None
+            messagebox.showinfo("Reset", "Se han limpiado todos los datos y vértices.")
+                            
         def import_txt(self):
             file_path = filedialog.askopenfilename(filetypes=[("Archivos de TXT/CSV/Excel", "*.txt *.csv *.xlxs")])
             if not file_path:
