@@ -190,8 +190,10 @@ def ventana_grupo_2():
             if cantidad > 0:
                 respuesta = messagebox.askyesno("Puntos duplicados", f"Se detectaron {cantidad} puntos duplicados.\n¿Deseas eliminarlos?")
                 if respuesta:
+                    self.df_before_dupes = self.df.copy()
                     self.df = self.df.drop_duplicates().reset_index(drop=True)
                     messagebox.showinfo("Limpieza completada", f"Se eliminaron {cantidad} duplicados.")
+                    self.btn_undo.pack(fill="x", pady=2)
                 else:
                     messagebox.showinfo("Aviso", "Los duplicados se han conservado")
 
@@ -224,12 +226,15 @@ def ventana_grupo_2():
                 self.canvas.mpl_disconnect(self.cid)
                 self.cid = None
             messagebox.showinfo("Reset", "Se han limpiado todos los datos y vértices.")
-                            
+
         def import_txt(self):
-            file_path = filedialog.askopenfilename(filetypes=[("Archivos de TXT/CSV/Excel", "*.txt *.csv *.xlxs")])
+            file_path = filedialog.askopenfilename(filetypes=[
+                ("Archivos TXT/CSV/Excel", "*.txt *.csv *.xlsx")
+            ])
             if not file_path:
                 return
 
+            
             formato = tk.StringVar()
             win_formato = tk.Toplevel(self.root)
             win_formato.title("Formato de archivo")
@@ -246,8 +251,8 @@ def ventana_grupo_2():
             win_formato.wait_window()
             if not formato.get():
                 return
-            
-            #Selección de delimitador manual si no es Excel
+
+          
             if file_path.endswith(".xlsx"):
                 delim = None
             else:
@@ -260,7 +265,8 @@ def ventana_grupo_2():
                     ttk.Radiobutton(win_delim, text=label, variable=delim, value=key).pack(anchor="w", padx=20)
                 ttk.Button(win_delim, text="Aceptar", command=win_delim.destroy).pack(pady=10)
                 win_delim.wait_window()
-                #Leer archivo y mostrar preview
+
+           
             try:
                 if file_path.endswith(".xlsx"):
                     df_preview = pd.read_excel(file_path, header=None)
@@ -279,43 +285,57 @@ def ventana_grupo_2():
                 messagebox.showerror("Error", f"No se pudo leer el archivo:\n{e}")
                 return
 
-                # Definir nombres de columnas según formato (sin encabezado en archivo)
-                if formato.get() in ["PNEZD", "PENZD"]:
-                    columnas = ["Punto", "A", "B", "Z", "Descripción"]
-                else:
-                    columnas = ["A", "B", "Z", "Descripción"]
-
-                df = pd.read_csv(file_path, sep=sep, header=None, names=columnas, dtype=str)
-                # Asignar X/Y según formato
+           
+            try:
+                ncols = df_preview.shape[1]
+                df_final = pd.DataFrame()
                 if formato.get() == "PNEZD":
-                    df.rename(columns={"A": "Y", "B": "X"}, inplace=True)
+                    if ncols < 5:
+                        messagebox.showerror("Error", "Formato PNEZD requiere 5 columnas.")
+                        return
+                    df_final["X"] = pd.to_numeric(df_preview[2], errors="coerce")
+                    df_final["Y"] = pd.to_numeric(df_preview[1], errors="coerce")
+                    df_final["Z"] = pd.to_numeric(df_preview[3], errors="coerce")
+                    df_final["Descripción"] = df_preview[4].fillna("").astype(str)
                 elif formato.get() == "PENZD":
-                    df.rename(columns={"A": "X", "B": "Y"}, inplace=True)
+                    if ncols < 5:
+                        messagebox.showerror("Error", "Formato PENZD requiere 5 columnas.")
+                        return
+                    df_final["X"] = pd.to_numeric(df_preview[1], errors="coerce")
+                    df_final["Y"] = pd.to_numeric(df_preview[2], errors="coerce")
+                    df_final["Z"] = pd.to_numeric(df_preview[3], errors="coerce")
+                    df_final["Descripción"] = df_preview[4].fillna("").astype(str)
                 elif formato.get() == "ENZD":
-                    df.rename(columns={"A": "X", "B": "Y"}, inplace=True)
+                    if ncols < 3:
+                        messagebox.showerror("Error", "Formato ENZD requiere al menos 3 columnas.")
+                        return
+                    df_final["X"] = pd.to_numeric(df_preview[0], errors="coerce")
+                    df_final["Y"] = pd.to_numeric(df_preview[1], errors="coerce")
+                    df_final["Z"] = pd.to_numeric(df_preview[2], errors="coerce")
+                    if ncols > 3:
+                        df_final["Descripción"] = df_preview[3].fillna("").astype(str)
                 elif formato.get() == "NEZD":
-                    df.rename(columns={"A": "Y", "B": "X"}, inplace=True)
+                    if ncols < 3:
+                        messagebox.showerror("Error", "Formato NEZD requiere al menos 3 columnas.")
+                        return
+                    df_final["Y"] = pd.to_numeric(df_preview[0], errors="coerce")
+                    df_final["X"] = pd.to_numeric(df_preview[1], errors="coerce")
+                    df_final["Z"] = pd.to_numeric(df_preview[2], errors="coerce")
+                    if ncols > 3:
+                        df_final["Descripción"] = df_preview[3].fillna("").astype(str)
+                else:
+                    messagebox.showerror("Error", "Formato no reconocido.")
+                    return
 
-                # Convertir X, Y, Z a float, Descripción como texto (puede haber vacíos)
-                for col in ["X", "Y", "Z"]:
-                    df[col] = pd.to_numeric(df[col], errors="coerce")
-                if "Descripción" in df.columns:
-                    df["Descripción"] = df["Descripción"].fillna("").astype(str)
-
-                columnas_validas = ["X", "Y", "Z"]
-                if "Descripción" in df.columns and not df["Descripción"].isnull().all() and not (df["Descripción"] == "").all():
-                    columnas_validas.append("Descripción")
-                self.df = df[columnas_validas].dropna(subset=["X", "Y", "Z"])
+                self.df = df_final.dropna(subset=["X", "Y", "Z"])
                 self.filtered_df = None
-
                 self.detectar_duplicados()
                 self.plot_points(self.df)
                 self.axis_limits = self.get_axis_limits(self.df)
                 self.label_total.config(text=f"Total points: {len(self.df)}")
                 self.label_filtered.config(text="Filtered points: 0")
-       
             except Exception as e:
-                messagebox.showerror("Error", f"No se pudo leer el archivo:\n{e}")
+                messagebox.showerror("Error", f"Importación fallida:\n{e}")
 
         def filtrar_puntos(self):
             # Si se usaron vértices por mouse válidos, usa esos
@@ -458,6 +478,19 @@ def ventana_grupo_2():
                 xs, ys = zip(*poly)
                 self.ax.plot(list(xs) + [xs[0]], list(ys) + [ys[0]], color="#d63031", linewidth=3, zorder=5, label="Polígono")
                 self.ax.legend()
+            self.ax.set_title(title, fontsize=16, fontweight="bold")
+            self.ax.set_xlabel("X", fontsize=13)
+            self.ax.set_ylabel("Y", fontsize=13)
+            if keep_limits and self.axis_limits is not None:
+                xlim, ylim = self.axis_limits
+                self.ax.set_xlim(*xlim)
+                self.ax.set_ylim(*ylim)
+            elif df is not None and not df.empty:
+                x_margin = (df["X"].max() - df["X"].min()) * 0.05
+                y_margin = (df["Y"].max() - df["Y"].min()) * 0.05
+                self.ax.set_xlim(df["X"].min() - x_margin, df["X"].max() + x_margin)
+                self.ax.set_ylim(df["Y"].min() - y_margin, df["Y"].max() + y_margin)
+            self.canvas.draw()
                            
     win2 = tk.Toplevel()
     app = PointFilterApp(win2)
