@@ -20,19 +20,519 @@ def ventana_grupo_1():
 # ===   VENTANA GRUPO 2 Ejemplo   ===
 # ===================================
 def ventana_grupo_2():
-    # --- IMPORTA AQUI LAS LIBRERIAS QUE NECESITES ---
+    import pandas as pd
+    import matplotlib.pyplot as plt 
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+    from tkinter import filedialog, messagebox, ttk
     import tkinter as tk
-    from tkinter import messagebox
+    import numpy as np
 
-    # --- AQUI VA TU LOGICA, FUNCIONES Y CLASES ---
-    # Por ejemplo:
-    def ejemplo_funcion():
-        messagebox.showinfo("Ejemplo", "Esto es un ejemplo para el Poly_2.")
+    class ToolTip:
+        def __init__(self, widget, text):
+            self.widget = widget
+            self.text = text
+            self.tipwindow = None
+            widget.bind('<Enter>', self.show_tip)
+            widget.bind('<Leave>', self.hide_tip)
+        def show_tip(self, event=None):
+            if self.tipwindow or not self.text:
+                return
+            x, y, _, _ = self.widget.bbox("insert") if self.widget.winfo_class() == 'Entry' else (0, 0, 0, 0)
+            x = x + self.widget.winfo_rootx() + 25
+            y = y + self.widget.winfo_rooty() + 20
+            self.tipwindow = tw = tk.Toplevel(self.widget)
+            tw.wm_overrideredirect(True)
+            tw.wm_geometry(f"+{x}+{y}")
+            label = tk.Label(tw, text=self.text, background="#333", foreground="white",
+                             relief="solid", borderwidth=1, font=("Segoe UI", 10, "bold"),
+                             padx=8, pady=4)
+            label.pack()
+        def hide_tip(self, event=None):
+            tw = self.tipwindow
+            if tw:
+                tw.destroy()
+            self.tipwindow = None
 
-    # --- CREA UNA NUEVA VENTANA PARA TU GRUPO ---
-    win = tk.Toplevel(root)
-    win.title("Poligono 2")
-    win.geometry("400x300")
+    def point_in_polygon(x, y, polygon):
+        n = len(polygon)
+        inside = False
+        px, py = x, y
+        for i in range(n):
+            xi, yi = polygon[i]
+            xj, yj = polygon[(i + 1) % n]
+            if ((yi > py) != (yj > py)) and \
+               (px < (xj - xi) * (py - yi) / ((yj - yi) + 1e-10) + xi):
+                inside = not inside
+        return inside
+
+    class PointFilterApp:
+        def __init__(self, root):
+            self.root = root
+            self.root.title("Filtrado de Nube de Puntos (X, Y, Z)")
+            self.root.geometry("1200x780")
+            self.root.configure(bg="#f7fafc")
+            self.df = None
+            self.filtered_df = None
+            self.df_before_dupes = None
+            self.vertex_entries = []
+            self.axis_limits = None
+            self.vertices_mouse = []
+            self.cid = None
+            self.create_widgets()
+
+        def create_widgets(self):
+            header = tk.Frame(self.root, bg="#0a3d62", height=70)
+            header.pack(fill="x")
+            title = tk.Label(header, text="Filtrado Inteligente de Nube de Puntos",
+                             font=("Segoe UI", 26, "bold"), bg="#0a3d62", fg="#ffffff")
+            title.pack(pady=14)
+            main_frame = tk.Frame(self.root, bg="#f7fafc")
+            main_frame.pack(fill="both", expand=True, padx=20, pady=10)
+            panel = tk.LabelFrame(main_frame, text="Opciones de Filtrado", font=("Segoe UI", 14, "bold"),
+                                  bg="#f7fafc", fg="#0a3d62", padx=16, pady=12, bd=2)
+            panel.pack(side="left", fill="y", padx=10, pady=10)
+            btn_import = ttk.Button(panel, text="Importar TXT", command=self.import_txt)
+            btn_import.pack(fill="x", pady=8)
+            ToolTip(btn_import, "Importa un archivo de puntos")
+            vert_label = tk.Label(panel, text="Vértices del polígono (Norte, Este):", font=("Segoe UI", 12, "bold"),
+                                  bg="#f7fafc", fg="#0a3d62")
+            vert_label.pack(pady=8)
+            verts_frame = tk.Frame(panel, bg="#f7fafc")
+            verts_frame.pack()
+            for i in range(4):
+                box = tk.Frame(verts_frame, bg="#f7fafc")
+                box.pack(side="left", padx=5)
+                tk.Label(box, text=f"V{i+1} N:", font=("Segoe UI", 11), bg="#f7fafc").pack()
+                entry_n = ttk.Entry(box, width=7)
+                entry_n.pack()
+                tk.Label(box, text="E:", font=("Segoe UI", 11), bg="#f7fafc").pack()
+                entry_e = ttk.Entry(box, width=7)
+                entry_e.pack()
+                self.vertex_entries.append((entry_n, entry_e))
+            btn_vertices_mouse = ttk.Button(panel, text="Elegir vértices con mouse", command=self.elegir_vertices_mouse)
+            btn_vertices_mouse.pack(fill="x", pady=5)
+            ToolTip(btn_vertices_mouse, "Haz clic izquierdo para agregar vértices, derecho para borrar el último")
+            btn_reset_poly = ttk.Button(panel, text="Reset Polígono", command=self.reset_poligono)
+            btn_reset_poly.pack(fill="x", pady=5)
+            ToolTip(btn_reset_poly, "Borra todos los vértices puestos con el mouse y limpia el polígono")
+            btn_filter = ttk.Button(panel, text="Filtrar por Polígono", command=self.filtrar_puntos)
+            btn_filter.pack(fill="x", pady=12)
+            ToolTip(btn_filter, "Filtra los puntos dentro del polígono")
+            btn_export = ttk.Button(panel, text="Exportar TXT/JSON", command=self.export_txt)
+            btn_export.pack(fill="x", pady=5)
+            ToolTip(btn_export, "Exporta los puntos filtrados en TXT o JSON")
+            btn_reset = ttk.Button(panel, text="Reset", command=self.reset_all)
+            btn_reset.pack(fill="x", pady=5)
+            ToolTip(btn_reset, "Limpiar todos los datos y vértices")
+            self.btn_undo = ttk.Button(panel, text="Deshacer duplicados", command=self.undo_duplicates)
+            self.btn_undo.pack(fill="x", pady=2)
+            self.btn_undo.pack_forget()
+            ToolTip(self.btn_undo, "Restaurar datos antes de eliminar duplicados")
+            btn_exit = ttk.Button(panel, text="Salir", command=self.root.destroy)
+            btn_exit.pack(fill="x", pady=10)
+            ToolTip(btn_exit, "Cerrar la ventana")
+            info_frame = tk.Frame(panel, bg="#f7fafc")
+            info_frame.pack(fill="x", pady=8)
+            self.label_total = tk.Label(info_frame, text="Total points: 0", font=("Segoe UI", 12), bg="#f7fafc", fg="#2c3e50")
+            self.label_total.pack()
+            self.label_filtered = tk.Label(info_frame, text="Filtered points: 0", font=("Segoe UI", 12), bg="#f7fafc", fg="#2c3e50")
+            self.label_filtered.pack()
+            graph_frame = tk.LabelFrame(main_frame, text="Vista gráfica", font=("Segoe UI", 14, "bold"),
+                                       bg="#f7fafc", fg="#0a3d62", padx=12, pady=12, bd=2)
+            graph_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
+            self.figure, self.ax = plt.subplots(figsize=(9, 7))
+            self.figure.patch.set_facecolor("#f7fafc")
+            self.ax.set_facecolor("#f7fafc")
+            self.canvas = FigureCanvasTkAgg(self.figure, master=graph_frame)
+            self.canvas.get_tk_widget().pack(fill="both", expand=True)
+
+        def elegir_vertices_mouse(self):
+            self.vertices_mouse = []
+            self.plot_points(self.df if self.df is not None else pd.DataFrame({"X":[],"Y":[],"Z":[]}))
+            if self.cid:
+                self.canvas.mpl_disconnect(self.cid)
+            self.cid = self.canvas.mpl_connect('button_press_event', self.__on_click_vertex)
+            messagebox.showinfo(
+                "Modo selección",
+                "Haz clic IZQUIERDO para poner vértices del polígono.\n"
+                "Clic DERECHO para borrar el último vértice.\n"
+                "Cuando termines, aprieta 'Filtrar por Polígono'."
+            )
+
+        def __on_click_vertex(self, event):
+            if event.inaxes != self.ax:
+                return
+            
+            if event.button == 1:
+                x, y = event.xdata, event.ydata
+                self.vertices_mouse.append((x, y))
+            
+            elif event.button == 3 and self.vertices_mouse:
+                self.vertices_mouse.pop()
+            else:
+                return
+            
+            self.plot_points(self.df if self.df is not None else pd.DataFrame({"X":[],"Y":[],"Z":[]}))
+            if self.vertices_mouse:
+                xs, ys = zip(*self.vertices_mouse)
+                self.ax.plot(xs, ys, 'ro-', linewidth=2, markersize=8, zorder=10)
+            self.canvas.draw()
+
+        def reset_poligono(self):
+            self.vertices_mouse = []
+            self.plot_points(self.df if self.df is not None else pd.DataFrame({"X":[],"Y":[],"Z":[]}))
+            if self.cid:
+                self.canvas.mpl_disconnect(self.cid)
+                self.cid = None
+                
+        def detectar_duplicados(self):
+            if self.df is None:
+                return
+            duplicados = self.df.duplicated()
+            cantidad = duplicados.sum()
+            if cantidad > 0:
+                respuesta = messagebox.askyesno("Puntos duplicados", f"Se detectaron {cantidad} puntos duplicados.\n¿Deseas eliminarlos?")
+                if respuesta:
+                    self.df_before_dupes = self.df.copy()
+                    self.df = self.df.drop_duplicates().reset_index(drop=True)
+                    messagebox.showinfo("Limpieza completada", f"Se eliminaron {cantidad} duplicados.")
+                    self.btn_undo.pack(fill="x", pady=2)
+                else:
+                    messagebox.showinfo("Aviso", "Los duplicados se han conservado")
+
+        def undo_duplicates(self):
+            if self.df_before_dupes is not None:
+                self.df = self.df_before_dupes
+                self.df_before_dupes = None
+                self.filtered_df = None
+                self.plot_points(self.df)
+                self.axis_limits = self.get_axis_limits(self.df)
+                self.label_total.config(text=f"Total points: {len(self.df)}")
+                self.label_filtered.config(text="Filtered points: 0")
+                self.btn_undo.pack_forget()
+                messagebox.showinfo("Deshacer", "Se restauraron los datos antes de eliminar duplicados.")
+
+        def reset_all(self):
+            self.df = None
+            self.filtered_df = None
+            self.df_before_dupes = None
+            self.axis_limits = None
+            self.vertices_mouse = []
+            self.plot_points(pd.DataFrame({"X":[],"Y":[],"Z":[]}))
+            for entry_n, entry_e in self.vertex_entries:
+                entry_n.delete(0, "end")
+                entry_e.delete(0, "end")
+            self.label_total.config(text="Total points: 0")
+            self.label_filtered.config(text="Filtered points: 0")
+            self.btn_undo.pack_forget()
+            if self.cid:
+                self.canvas.mpl_disconnect(self.cid)
+                self.cid = None
+            messagebox.showinfo("Reset", "Se han limpiado todos los datos y vértices.")
+
+        def import_txt(self):
+            file_path = filedialog.askopenfilename(filetypes=[
+                ("Archivos TXT/CSV/Excel", "*.txt *.csv *.xlsx")
+            ])
+            if not file_path:
+                return
+
+            
+            formato = tk.StringVar()
+            win_formato = tk.Toplevel(self.root)
+            win_formato.title("Formato de archivo")
+            tk.Label(win_formato, text="¿Qué formato tiene el archivo?", font=("Segoe UI", 13, "bold")).pack(pady=14)
+            formatos = [
+                ("PNEZD (Punto, Norte, Este, Cota, Descripción)", "PNEZD"),
+                ("PENZD (Punto, Este, Norte, Cota, Descripción)", "PENZD"),
+                ("ENZD (Este, Norte, Cota, Descripción)", "ENZD"),
+                ("NEZD (Norte, Este, Cota, Descripción)", "NEZD"),
+            ]
+            for texto, valor in formatos:
+                ttk.Radiobutton(win_formato, text=texto, variable=formato, value=valor).pack(anchor="w", padx=20)
+            ttk.Button(win_formato, text="Aceptar", command=win_formato.destroy).pack(pady=8)
+            win_formato.wait_window()
+            if not formato.get():
+                return
+
+          
+            if file_path.endswith(".xlsx"):
+                delim = None
+            else:
+                delimitadores = {",": "Coma (,)", ";": "Punto y coma (;)", " ": "Espacio"}
+                delim = tk.StringVar(value=",")
+                win_delim = tk.Toplevel(self.root)
+                win_delim.title("Escoge delimitador")
+                tk.Label(win_delim, text="¿Qué delimitador tiene el archivo?", font=("Segoe UI", 12)).pack(pady=10)
+                for key, label in delimitadores.items():
+                    ttk.Radiobutton(win_delim, text=label, variable=delim, value=key).pack(anchor="w", padx=20)
+                ttk.Button(win_delim, text="Aceptar", command=win_delim.destroy).pack(pady=10)
+                win_delim.wait_window()
+
+           
+            try:
+                if file_path.endswith(".xlsx"):
+                    df_preview = pd.read_excel(file_path, header=None)
+                else:
+                    df_preview = pd.read_csv(file_path, sep=delim.get(), header=None, dtype=str)
+                win_preview = tk.Toplevel(self.root)
+                win_preview.title("Vista previa de datos")
+                tk.Label(win_preview, text="Primeras filas del archivo", font=("Segoe UI", 12, "bold")).pack(pady=8)
+                text_preview = tk.Text(win_preview, width=80, height=10, font=("Consolas", 10))
+                text_preview.pack()
+                for row in df_preview.head(5).values:
+                    text_preview.insert("end", " | ".join(str(v) for v in row) + "\n")
+                ttk.Button(win_preview, text="Continuar", command=win_preview.destroy).pack(pady=7)
+                win_preview.wait_window()
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo leer el archivo:\n{e}")
+                return
+
+           
+            try:
+                ncols = df_preview.shape[1]
+                df_final = pd.DataFrame()
+                if formato.get() == "PNEZD":
+                    if ncols < 5:
+                        messagebox.showerror("Error", "Formato PNEZD requiere 5 columnas.")
+                        return
+                    df_final["X"] = pd.to_numeric(df_preview[2], errors="coerce")
+                    df_final["Y"] = pd.to_numeric(df_preview[1], errors="coerce")
+                    df_final["Z"] = pd.to_numeric(df_preview[3], errors="coerce")
+                    df_final["Descripción"] = df_preview[4].fillna("").astype(str)
+                elif formato.get() == "PENZD":
+                    if ncols < 5:
+                        messagebox.showerror("Error", "Formato PENZD requiere 5 columnas.")
+                        return
+                    df_final["X"] = pd.to_numeric(df_preview[1], errors="coerce")
+                    df_final["Y"] = pd.to_numeric(df_preview[2], errors="coerce")
+                    df_final["Z"] = pd.to_numeric(df_preview[3], errors="coerce")
+                    df_final["Descripción"] = df_preview[4].fillna("").astype(str)
+                elif formato.get() == "ENZD":
+                    if ncols < 3:
+                        messagebox.showerror("Error", "Formato ENZD requiere al menos 3 columnas.")
+                        return
+                    df_final["X"] = pd.to_numeric(df_preview[0], errors="coerce")
+                    df_final["Y"] = pd.to_numeric(df_preview[1], errors="coerce")
+                    df_final["Z"] = pd.to_numeric(df_preview[2], errors="coerce")
+                    if ncols > 3:
+                        df_final["Descripción"] = df_preview[3].fillna("").astype(str)
+                elif formato.get() == "NEZD":
+                    if ncols < 3:
+                        messagebox.showerror("Error", "Formato NEZD requiere al menos 3 columnas.")
+                        return
+                    df_final["Y"] = pd.to_numeric(df_preview[0], errors="coerce")
+                    df_final["X"] = pd.to_numeric(df_preview[1], errors="coerce")
+                    df_final["Z"] = pd.to_numeric(df_preview[2], errors="coerce")
+                    if ncols > 3:
+                        df_final["Descripción"] = df_preview[3].fillna("").astype(str)
+                else:
+                    messagebox.showerror("Error", "Formato no reconocido.")
+                    return
+
+                self.df = df_final.dropna(subset=["X", "Y", "Z"])
+                self.filtered_df = None
+                self.detectar_duplicados()
+                self.plot_points(self.df)
+                self.axis_limits = self.get_axis_limits(self.df)
+                self.label_total.config(text=f"Total points: {len(self.df)}")
+                self.label_filtered.config(text="Filtered points: 0")
+            except Exception as e:
+                messagebox.showerror("Error", f"Importación fallida:\n{e}")
+
+        def filtrar_puntos(self):
+            # Si se usaron vértices por mouse válidos, usa esos
+            if self.vertices_mouse and len(self.vertices_mouse) >= 3:
+                poly = self.vertices_mouse
+                # Desconecta el evento para evitar seguir agregando vértices al hacer click
+                if self.cid:
+                    self.canvas.mpl_disconnect(self.cid)
+                    self.cid = None
+                self.vertices_mouse = []
+            else:
+                # Usa los entrys manuales
+                poly = []
+                for i, (entry_n, entry_e) in enumerate(self.vertex_entries):
+                    try:
+                        n = float(entry_n.get())
+                        e = float(entry_e.get())
+                        poly.append((e, n))
+                    except ValueError:
+                        continue
+                if len(poly) < 3:
+                    messagebox.showerror("Error", "Debes ingresar al menos 3 vértices para definir el polígono.")
+                    return
+            mask = [point_in_polygon(x, y, poly) for x, y in zip(self.df["X"], self.df["Y"])]
+            self.filtered_df = self.df[mask]
+            self.plot_points(self.filtered_df, poly, title="Puntos dentro del polígono definido", keep_limits=True)
+            self.label_filtered.config(text=f"Filtered points: {len(self.filtered_df)}")
+
+        def export_txt(self):
+            if self.df is None:
+                messagebox.showwarning("Advertencia", "Primero debes importar un archivo.")
+                return
+            data_to_export = self.filtered_df if self.filtered_df is not None else self.df
+            data_to_export = data_to_export.dropna(subset=["X", "Y", "Z"])
+            formato = tk.StringVar()
+            delimitador = tk.StringVar()
+            export_type = tk.StringVar(value="TXT")
+            def confirmar():
+                opciones.destroy()
+            opciones = tk.Toplevel(self.root)
+            opciones.title("Opciones de Exportación")
+            opciones.geometry("400x450")
+            opciones.grab_set()
+            tk.Label(opciones, text="Selecciona el formato de exportación:", font=("Segoe UI", 12)).pack(pady=10)
+            formatos = [
+                ("PNEZD (Punto, Norte, Este, Cota, Descripción)", "PNEZD"),
+                ("PENZD (Punto, Este, Norte, Cota, Descripción)", "PENZD"),
+                ("ENZD (Este, Norte, Cota, Descripción)", "ENZD"),
+                ("NEZD (Norte, Este, Cota, Descripción)", "NEZD"),
+            ]
+            for texto, valor in formatos:
+                tk.Radiobutton(opciones, text=texto, variable=formato, value=valor).pack(anchor="w", padx=20)
+            tk.Label(opciones, text="Selecciona el tipo de archivo:", font=("Segoe UI", 12)).pack(pady=10)
+            tk.Radiobutton(opciones, text="TXT/CSV", variable=export_type, value="TXT").pack(anchor="w", padx=20)
+            tk.Radiobutton(opciones, text="JSON", variable=export_type, value="JSON").pack(anchor="w", padx=20)
+            delim_frame = tk.Frame(opciones)
+            delim_frame.pack()
+            tk.Label(delim_frame, text="Selecciona el delimitador (solo TXT):", font=("Segoe UI", 12)).pack(pady=10)
+            delimitadores = [("Coma (,)", ","), ("Punto y coma (;)", ";"), ("Espacio", " ")]
+            for texto, valor in delimitadores:
+                tk.Radiobutton(delim_frame, text=texto, variable=delimitador, value=valor).pack(anchor="w", padx=20)
+            tk.Button(opciones, text="Aceptar", command=confirmar, bg="#0984e3", fg="white").pack(pady=20)
+            opciones.wait_window()
+            if not formato.get() or not export_type.get() or (export_type.get() == "TXT" and not delimitador.get()):
+                return
+
+            desc_col = "Descripción" if "Descripción" in data_to_export.columns and not (data_to_export["Descripción"] == "").all() else None
+            if export_type.get() == "TXT":
+                if formato.get() == "PNEZD":
+                    export_cols = ["Punto", "Norte", "Este", "Cota"]
+                    data = {
+                        "Punto": range(1, len(data_to_export) + 1),
+                        "Norte": data_to_export["Y"].astype(float),
+                        "Este": data_to_export["X"].astype(float),
+                        "Cota": data_to_export["Z"].astype(float),
+                    }
+                elif formato.get() == "PENZD":
+                    export_cols = ["Punto", "Este", "Norte", "Cota"]
+                    data = {
+                        "Punto": range(1, len(data_to_export) + 1),
+                        "Este": data_to_export["X"].astype(float),
+                        "Norte": data_to_export["Y"].astype(float),
+                        "Cota": data_to_export["Z"].astype(float),
+                    }
+                elif formato.get() == "ENZD":
+                    export_cols = ["Este", "Norte", "Cota"]
+                    data = {
+                        "Este": data_to_export["X"].astype(float),
+                        "Norte": data_to_export["Y"].astype(float),
+                        "Cota": data_to_export["Z"].astype(float),
+                    }
+                elif formato.get() == "NEZD":
+                    export_cols = ["Norte", "Este", "Cota"]
+                    data = {
+                        "Norte": data_to_export["Y"].astype(float),
+                        "Este": data_to_export["X"].astype(float),
+                        "Cota": data_to_export["Z"].astype(float),
+                    }
+                if desc_col:
+                    export_cols.append("Descripción")
+                    data["Descripción"] = data_to_export[desc_col].fillna("")
+                export_df = pd.DataFrame(data)[export_cols]
+                export_df = export_df.dropna(how="all")
+                preview_win = tk.Toplevel(self.root)
+                preview_win.title("Vista previa de exportación")
+                preview_win.geometry("850x450")
+                tk.Label(preview_win, text="Vista previa de los primeros registros a exportar:", font=("Segoe UI", 12, "bold")).pack(pady=8)
+                text_preview = tk.Text(preview_win, width=100, height=18, font=("Consolas", 10))
+                text_preview.pack()
+                header_line = delimitador.get().join(export_df.columns.tolist())
+                text_preview.insert("end", header_line + "\n" + ("-"*len(header_line)) + "\n")
+                preview_data = export_df.head(20)
+                for row in preview_data.values:
+                    line = delimitador.get().join([str(v) for v in row])
+                    text_preview.insert("end", line + "\n")
+                tk.Label(preview_win, text=f"Total a exportar: {len(export_df)} registros", font=("Segoe UI", 11)).pack(pady=6)
+                def do_export():
+                    preview_win.destroy()
+                    file_path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("TXT Files", "*.txt")])
+                    if not file_path:
+                        return
+                    try:
+                        export_df.to_csv(file_path, sep=delimitador.get(), index=False, header=False, float_format='%.3f')
+                        messagebox.showinfo("Éxito", f"Archivo exportado correctamente:\n{file_path}")
+                    except Exception as e:
+                        messagebox.showerror("Error", f"No se pudo exportar el archivo:\n{e}")
+                def cancel_export():
+                    preview_win.destroy()
+                btn_exportar = tk.Button(preview_win, text="Exportar", command=do_export, bg="#0984e3", fg="white", font=("Segoe UI", 11, "bold"))
+                btn_exportar.pack(side="left", padx=70, pady=10)
+                btn_cancelar = tk.Button(preview_win, text="Cancelar", command=cancel_export, bg="#d63031", fg="white", font=("Segoe UI", 11, "bold"))
+                btn_cancelar.pack(side="right", padx=70, pady=10)
+            elif export_type.get() == "JSON":
+
+                export_df = data_to_export.copy()
+                preview_win = tk.Toplevel(self.root)
+                preview_win.title("Vista previa de exportación JSON")
+                preview_win.geometry("850x450")
+                tk.Label(preview_win, text="Vista previa de los primeros registros a exportar (JSON):", font=("Segoe UI", 12, "bold")).pack(pady=8)
+                text_preview = tk.Text(preview_win, width=100, height=18, font=("Consolas", 10))
+                text_preview.pack()
+
+                preview_json = export_df.head(20).to_json(orient="records", lines=True, force_ascii=False)
+                text_preview.insert("end", preview_json)
+                tk.Label(preview_win, text=f"Total a exportar: {len(export_df)} registros", font=("Segoe UI", 11)).pack(pady=6)
+                def do_export_json():
+                    preview_win.destroy()
+                    file_path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON Files", "*.json")])
+                    if not file_path:
+                        return
+                    try:
+                        export_df.to_json(file_path, orient="records", lines=True, force_ascii=False)
+                        messagebox.showinfo("Éxito", f"Archivo JSON exportado correctamente:\n{file_path}")
+                    except Exception as e:
+                        messagebox.showerror("Error", f"No se pudo exportar el archivo JSON:\n{e}")
+                def cancel_export():
+                    preview_win.destroy()
+                btn_exportar = tk.Button(preview_win, text="Exportar JSON", command=do_export_json, bg="#0984e3", fg="white", font=("Segoe UI", 11, "bold"))
+                btn_exportar.pack(side="left", padx=70, pady=10)
+                btn_cancelar = tk.Button(preview_win, text="Cancelar", command=cancel_export, bg="#d63031", fg="white", font=("Segoe UI", 11, "bold"))
+                btn_cancelar.pack(side="right", padx=70, pady=10)
+            
+        def get_axis_limits(self, df):
+            x_margin = (df["X"].max() - df["X"].min()) * 0.05
+            y_margin = (df["Y"].max() - df["Y"].min()) * 0.05
+            xlim = (df["X"].min() - x_margin, df["X"].max() + x_margin)
+            ylim = (df["Y"].min() - y_margin, df["Y"].max() + y_margin)
+            return xlim, ylim
+
+        def plot_points(self, df, poly=None, title="Puntos Originales", keep_limits=False):
+            self.ax.clear()
+            self.ax.grid(True, linestyle="--", alpha=0.3)
+            if df is not None and not df.empty:
+                self.ax.scatter(df["X"], df["Y"], s=40, alpha=0.9, c="#0984e3", edgecolors="#34495e", linewidths=1, zorder=3)
+            if poly is not None and len(poly) >= 3:
+                xs, ys = zip(*poly)
+                self.ax.plot(list(xs) + [xs[0]], list(ys) + [ys[0]], color="#d63031", linewidth=3, zorder=5, label="Polígono")
+                self.ax.legend()
+            self.ax.set_title(title, fontsize=16, fontweight="bold")
+            self.ax.set_xlabel("X", fontsize=13)
+            self.ax.set_ylabel("Y", fontsize=13)
+            if keep_limits and self.axis_limits is not None:
+                xlim, ylim = self.axis_limits
+                self.ax.set_xlim(*xlim)
+                self.ax.set_ylim(*ylim)
+            elif df is not None and not df.empty:
+                x_margin = (df["X"].max() - df["X"].min()) * 0.05
+                y_margin = (df["Y"].max() - df["Y"].min()) * 0.05
+                self.ax.set_xlim(df["X"].min() - x_margin, df["X"].max() + x_margin)
+                self.ax.set_ylim(df["Y"].min() - y_margin, df["Y"].max() + y_margin)
+            self.canvas.draw()
+                           
+    win2 = tk.Toplevel()
+    app = PointFilterApp(win2)
 
 
     # -------------- INSTRUCCIONES GRUPO 3 --------------
